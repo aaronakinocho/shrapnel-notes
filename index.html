@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Shrapnel"/>
+<meta name="theme-color" content="#4A7C59"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
+<title>Shrapnel Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --sauge: #4A7C59;
+  --sauge-dark: #3A6B48;
+  --sauge-dim: #7FAF8A;
+  --sable: #F5EFE6;
+  --sable-mid: #EDE5D9;
+  --sable-dark: #C8C4BE;
+  --terracotta: #E07A50;
+  --terracotta-dark: #C4663C;
+  --ink: #1C1C1C;
+  --ink-mid: #4A4238;
+  --ink-dim: #9B8E7E;
+  --white: #FFFFFF;
+  --green-text: #F0F7F2;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: var(--sauge); color: var(--ink); -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; }
+* { font-family: 'DM Sans', system-ui, sans-serif; }
+textarea, input, select { font-family: inherit; }
+textarea:focus, input:focus { outline: none; }
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+::-webkit-scrollbar { width: 2px; }
+::-webkit-scrollbar-thumb { background: var(--sable-dark); border-radius: 1px; }
+
+/* ===== LAYOUT ===== */
+#app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+
+#topbar {
+  background: var(--sauge);
+  padding: calc(var(--safe-top) + 10px) 16px 10px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.brand { display: flex; align-items: center; gap: 9px; }
+.brand-name { color: var(--green-text); font-size: 15px; font-weight: 500; letter-spacing: 0.02em; }
+.streak-pill { font-size: 11px; color: var(--green-text); background: rgba(240,247,242,0.15); border: 1px solid rgba(240,247,242,0.28); padding: 3px 10px; border-radius: 20px; }
+
+#main { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--sable); }
+
+#navbar {
+  background: var(--sauge);
+  border-top: none;
+  display: flex; justify-content: space-around; align-items: center;
+  padding: 8px 0 calc(8px + var(--safe-bottom));
+  flex-shrink: 0;
+}
+.nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 12px; color: var(--sauge-dim); font-size: 10px; transition: color 0.15s; }
+.nav-item.active { color: var(--green-text); }
+.nav-item svg { flex-shrink: 0; }
+
+/* ===== VIEWS ===== */
+.view { display: none; min-height: 100%; }
+.view.active { display: block; }
+#v-write { display: none; flex-direction: column; min-height: 100%; }
+#v-write.active { display: flex; }
+
+/* ===== WRITE ===== */
+.write-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 40px 24px; text-align: center; }
+.empty-glyph { animation: pulse 3s ease infinite; }
+.empty-label { font-size: 15px; color: var(--ink-dim); line-height: 1.6; }
+.btn-pick { padding: 14px 32px; background: var(--terracotta); color: var(--white); border-radius: 12px; font-size: 15px; font-weight: 500; transition: transform 0.12s; }
+.btn-pick:active { transform: scale(0.97); }
+
+.editor { flex: 1; display: flex; flex-direction: column; }
+.idea-header { padding: 18px 18px 14px; border-bottom: 1px solid var(--sable-mid); }
+.idea-tag { font-size: 10px; color: var(--ink-dim); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+.idea-title { font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-size: 22px; color: var(--ink); line-height: 1.3; font-weight: normal; }
+
+.editor-scroll { flex: 1; overflow-y: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+
+#draft {
+  width: 100%; min-height: 180px;
+  background: var(--white); border: 1.5px solid var(--sable-mid);
+  border-radius: 12px; padding: 16px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 16px; color: var(--ink-mid); line-height: 1.85;
+  resize: none; transition: border-color 0.2s;
+}
+#draft:focus { border-color: var(--sauge); }
+#draft.over { border-color: var(--terracotta); }
+#draft::placeholder { color: var(--sable-dark); font-style: italic; }
+
+.word-bar { display: flex; align-items: center; gap: 10px; }
+.word-count { font-size: 11px; color: var(--ink-dim); min-width: 52px; font-variant-numeric: tabular-nums; transition: color 0.3s; }
+.meter-track { flex: 1; height: 3px; background: var(--sable-mid); border-radius: 2px; overflow: hidden; }
+.meter-fill { height: 100%; border-radius: 2px; transition: width 0.2s, background 0.3s; }
+
+.editor-tabs { display: flex; gap: 4px; }
+.etab { padding: 7px 14px; border-radius: 8px; font-size: 12px; color: var(--ink-dim); transition: all 0.15s; }
+.etab.active { background: var(--sable-mid); color: var(--ink); }
+
+.tab-panel { display: none; }
+.tab-panel.active { display: flex; flex-direction: column; gap: 8px; }
+
+.link-search, .ref-text-input { width: 100%; padding: 10px 14px; font-size: 13px; background: var(--white); border: 1px solid var(--sable-mid); border-radius: 10px; color: var(--ink); }
+.link-search::placeholder, .ref-text-input::placeholder { color: var(--sable-dark); }
+
+.linked-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.linked-chip { display: inline-flex; align-items: center; gap: 5px; background: var(--sable-mid); border-radius: 6px; padding: 5px 10px; font-size: 12px; color: var(--ink-mid); }
+.linked-chip .chip-arr { color: var(--sauge); }
+.linked-chip .chip-rm { color: var(--sable-dark); font-size: 14px; padding: 0 2px; }
+
+.link-results { display: flex; flex-direction: column; gap: 3px; }
+.link-result { padding: 9px 12px; border-radius: 8px; font-size: 13px; background: var(--white); border: 1px solid var(--sable-mid); color: var(--ink-mid); text-align: left; width: 100%; display: flex; justify-content: space-between; align-items: center; transition: background 0.12s; }
+.link-result:active { background: var(--sable-mid); }
+.link-status { font-size: 10px; color: var(--sauge); }
+
+.ref-type-row { display: flex; gap: 5px; flex-wrap: wrap; }
+.ref-type-btn { padding: 5px 11px; border-radius: 20px; font-size: 11px; border: 1px solid var(--sable-mid); color: var(--ink-dim); transition: all 0.15s; background: var(--white); }
+.ref-type-btn.active { border-color: var(--sauge); color: var(--sauge); background: rgba(74,124,89,0.07); }
+.btn-add-ref { padding: 10px 16px; background: var(--sable-mid); border-radius: 10px; font-size: 13px; color: var(--ink-mid); width: 100%; text-align: left; }
+.refs-list { display: flex; flex-direction: column; gap: 6px; }
+.ref-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; background: var(--white); border: 1px solid var(--sable-mid); border-radius: 10px; }
+.ref-emoji { font-size: 16px; flex-shrink: 0; }
+.ref-body { flex: 1; min-width: 0; }
+.ref-type-label { font-size: 9px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+.ref-text { font-size: 12px; color: var(--ink-mid); word-break: break-word; margin-top: 2px; }
+.ref-rm { color: var(--sable-dark); font-size: 16px; padding: 2px 4px; }
+
+.editor-footer { padding: 12px 18px calc(12px); border-top: 1px solid var(--sable-mid); background: var(--sable); display: flex; gap: 8px; }
+.btn-save { flex: 1; padding: 12px; border: 1.5px solid var(--sauge); border-radius: 10px; font-size: 13px; color: var(--sauge); transition: all 0.15s; }
+.btn-save.saved { color: var(--sauge); background: rgba(74,124,89,0.08); }
+.btn-validate { flex: 2; padding: 12px; background: var(--terracotta); color: var(--white); border-radius: 10px; font-size: 13px; font-weight: 500; transition: transform 0.1s; }
+.btn-validate:active { transform: scale(0.98); }
+.btn-skip { padding: 12px 14px; border: 1px solid var(--sable-mid); border-radius: 10px; font-size: 13px; color: var(--ink-dim); }
+
+/* ===== STATS ===== */
+.stats-wrap { padding: 20px 18px; display: flex; flex-direction: column; gap: 16px; padding-bottom: 32px; }
+.section-label { font-size: 10px; color: var(--ink-dim); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+.streak-card { background: var(--sauge); border-radius: 14px; padding: 18px; display: flex; align-items: center; gap: 14px; }
+.streak-fire { font-size: 32px; }
+.streak-val { font-family: Georgia, serif; font-size: 36px; color: var(--green-text); font-weight: normal; line-height: 1; }
+.streak-label { font-size: 11px; color: var(--sauge-dim); margin-top: 3px; }
+.streak-best { margin-left: auto; text-align: right; }
+.streak-best-label { font-size: 10px; color: var(--sauge-dim); }
+.streak-best-val { font-family: Georgia, serif; font-size: 22px; color: var(--green-text); }
+
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat-card { background: var(--white); border: 1px solid var(--sable-mid); border-radius: 14px; padding: 16px; }
+.stat-val { font-family: Georgia, serif; font-size: 28px; font-weight: normal; line-height: 1; color: var(--ink); }
+.stat-val.green { color: var(--sauge); }
+.stat-val.terra { color: var(--terracotta); }
+.stat-label { font-size: 11px; color: var(--ink-dim); margin-top: 4px; }
+.stat-sub { font-size: 10px; color: var(--sable-dark); margin-top: 3px; }
+
+.challenge-card { background: var(--white); border: 1px solid var(--sable-mid); border-radius: 14px; padding: 16px; }
+.challenge-title { font-size: 13px; color: var(--ink); margin-bottom: 10px; }
+.challenge-track { height: 6px; background: var(--sable-mid); border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+.challenge-fill { height: 100%; background: var(--terracotta); border-radius: 3px; transition: width 0.5s ease; }
+.challenge-label { font-size: 11px; color: var(--ink-dim); }
+
+.badges-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.badge { background: var(--white); border: 1px solid var(--sable-mid); border-radius: 12px; padding: 12px 8px; text-align: center; }
+.badge.earned { border-color: rgba(74,124,89,0.35); }
+.badge-icon { font-size: 22px; margin-bottom: 5px; }
+.badge-name { font-size: 10px; color: var(--ink-dim); line-height: 1.3; }
+.badge.earned .badge-name { color: var(--sauge); }
+.badge-locked { opacity: 0.2; filter: grayscale(1); }
+
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.cal-dot { aspect-ratio: 1; border-radius: 4px; background: var(--sable-mid); }
+.cal-dot.has { background: rgba(74,124,89,0.4); }
+.cal-dot.today { border: 1.5px solid var(--sauge); }
+
+/* ===== IDEAS ===== */
+.ideas-wrap { padding: 18px; padding-bottom: 32px; }
+.search-input { width: 100%; padding: 11px 16px; font-size: 14px; background: var(--white); border: 1px solid var(--sable-mid); border-radius: 12px; color: var(--ink); margin-bottom: 12px; }
+.filter-row { display: flex; gap: 6px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 2px; }
+.filter-chip { padding: 5px 14px; border-radius: 20px; font-size: 12px; border: 1px solid var(--sable-mid); color: var(--ink-dim); white-space: nowrap; background: var(--white); }
+.filter-chip.active { border-color: var(--sauge); color: var(--sauge); background: rgba(74,124,89,0.07); }
+.ideas-section { margin-bottom: 20px; }
+.ideas-section-label { font-size: 10px; color: var(--ink-dim); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+.idea-row { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; background: var(--white); border: 1px solid var(--sable-mid); border-radius: 12px; margin-bottom: 6px; transition: border-color 0.15s; }
+.idea-row.done { opacity: 0.6; }
+.idea-bullet { font-size: 13px; flex-shrink: 0; margin-top: 1px; color: var(--sable-dark); }
+.idea-bullet.done { color: var(--sauge); }
+.idea-row-body { flex: 1; min-width: 0; }
+.idea-row-title { font-family: Georgia, serif; font-size: 14px; color: var(--ink); line-height: 1.4; }
+.idea-row-meta { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; }
+.meta-tag { font-size: 10px; padding: 2px 7px; border-radius: 4px; background: var(--sable-mid); color: var(--ink-dim); }
+.meta-tag.green { color: var(--sauge); }
+.meta-tag.terra { color: var(--terracotta); }
+.idea-row-btn { font-size: 11px; padding: 5px 10px; border: 1px solid var(--sable-mid); border-radius: 7px; color: var(--ink-dim); flex-shrink: 0; }
+
+/* ===== READ VIEW ===== */
+.read-wrap { display: flex; flex-direction: column; min-height: 100%; }
+.read-header { padding: 16px 18px 14px; border-bottom: 1px solid var(--sable-mid); }
+.back-btn { font-size: 12px; color: var(--ink-dim); margin-bottom: 10px; display: flex; align-items: center; gap: 4px; }
+.read-scroll { flex: 1; overflow-y: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 16px; }
+.read-text-card { background: var(--white); border: 1px solid var(--sable-mid); border-radius: 12px; padding: 16px; }
+.read-text { font-family: Georgia, serif; font-size: 16px; color: var(--ink-mid); line-height: 1.85; }
+.read-footer { padding: 12px 18px; border-top: 1px solid var(--sable-mid); background: var(--sable); display: flex; gap: 8px; }
+.btn-modify { flex: 1; padding: 12px; border: 1.5px solid var(--sauge); border-radius: 10px; font-size: 13px; color: var(--sauge); }
+.btn-reopen { flex: 1; padding: 12px; border: 1px solid rgba(224,122,80,0.3); border-radius: 10px; font-size: 13px; color: var(--terracotta); background: rgba(224,122,80,0.06); }
+
+/* EDIT MODE */
+#edit-draft { width: 100%; min-height: 200px; background: var(--white); border: 1.5px solid var(--sauge); border-radius: 12px; padding: 16px; font-family: Georgia, serif; font-size: 16px; color: var(--ink-mid); line-height: 1.85; resize: none; }
+#edit-draft:focus { outline: none; }
+
+/* ===== ADD ===== */
+.add-wrap { padding: 24px 18px; display: flex; flex-direction: column; gap: 14px; }
+.form-label { font-size: 10px; color: var(--ink-dim); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+#add-textarea { width: 100%; min-height: 200px; padding: 16px; font-size: 14px; line-height: 1.75; background: var(--white); border: 1px solid var(--sable-mid); border-radius: 12px; color: var(--ink); resize: none; }
+#add-textarea:focus { border-color: var(--sauge); }
+.add-hint { font-size: 12px; color: var(--ink-dim); line-height: 1.6; }
+.detected { font-size: 11px; color: var(--sauge); text-align: center; }
+.btn-add { width: 100%; padding: 14px; background: var(--terracotta); color: var(--white); border-radius: 12px; font-size: 15px; font-weight: 500; transition: transform 0.1s; }
+.btn-add:active { transform: scale(0.98); }
+
+/* ===== NOTIFICATION ===== */
+#notif { position: fixed; top: calc(var(--safe-top) + 68px); left: 50%; transform: translateX(-50%) translateY(-8px); background: var(--ink); color: var(--green-text); padding: 10px 20px; border-radius: 20px; font-size: 12px; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; white-space: nowrap; z-index: 999; }
+#notif.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ===== LOADING ===== */
+#loading { position: fixed; inset: 0; background: var(--sauge); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; z-index: 9999; transition: opacity 0.4s; }
+#loading.hidden { opacity: 0; pointer-events: none; }
+.loading-logo { animation: pulse 2s ease infinite; }
+.loading-text { color: var(--green-text); font-size: 13px; opacity: 0.7; }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+.fade-up { animation: fadeUp 0.3s ease both; }
+</style>
+</head>
+<body>
+
+<!-- Loading screen -->
+<div id="loading">
+  <div class="loading-logo">
+    <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+      <rect width="64" height="64" rx="14" fill="#3A6B48"/>
+      <polygon points="32,8 44,14 52,26 48,36 38,44 28,50 16,44 12,30 18,18 28,12" fill="none" stroke="#F0F7F2" stroke-width="1.5"/>
+      <polyline points="32,8 36,20 30,28 34,38 28,50" fill="none" stroke="#E07A50" stroke-width="2" stroke-linecap="round"/>
+      <line x1="44" y1="14" x2="36" y2="20" stroke="#F0F7F2" stroke-width="0.8" opacity="0.5"/>
+      <line x1="52" y1="26" x2="36" y2="20" stroke="#F0F7F2" stroke-width="0.8" opacity="0.5"/>
+      <line x1="48" y1="36" x2="34" y2="38" stroke="#F0F7F2" stroke-width="0.8" opacity="0.4"/>
+      <circle cx="30" cy="28" r="3" fill="#E07A50"/>
+    </svg>
+  </div>
+  <div class="loading-text">Chargement…</div>
+</div>
+
+<div id="app">
+  <!-- Topbar -->
+  <div id="topbar">
+    <div class="brand">
+      <svg width="26" height="26" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <rect width="64" height="64" rx="14" fill="#3A6B48"/>
+        <polygon points="32,8 44,14 52,26 48,36 38,44 28,50 16,44 12,30 18,18 28,12" fill="none" stroke="#F0F7F2" stroke-width="1.5"/>
+        <polyline points="32,8 36,20 30,28 34,38 28,50" fill="none" stroke="#E07A50" stroke-width="2" stroke-linecap="round"/>
+        <line x1="44" y1="14" x2="36" y2="20" stroke="#F0F7F2" stroke-width="0.8" opacity="0.5"/>
+        <line x1="52" y1="26" x2="36" y2="20" stroke="#F0F7F2" stroke-width="0.8" opacity="0.5"/>
+        <circle cx="30" cy="28" r="2.5" fill="#E07A50"/>
+      </svg>
+      <span class="brand-name">Shrapnel Notes</span>
+    </div>
+    <div class="streak-pill" id="top-streak"></div>
+  </div>
+
+  <!-- Main -->
+  <div id="main">
+
+    <!-- WRITE -->
+    <div id="v-write" class="view active">
+      <div id="write-empty" class="write-empty">
+        <div class="empty-glyph">
+          <svg width="52" height="52" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="32,8 44,14 52,26 48,36 38,44 28,50 16,44 12,30 18,18 28,12" stroke="#C8C4BE" stroke-width="2"/>
+            <polyline points="32,8 36,20 30,28 34,38 28,50" stroke="#EDE5D9" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="30" cy="28" r="3" fill="#EDE5D9"/>
+          </svg>
+        </div>
+        <div class="empty-label" id="empty-label">Prêt à écrire ?</div>
+        <button class="btn-pick" id="btn-pick" onclick="pickRandom()">Piocher une idée au hasard</button>
+      </div>
+
+      <div id="editor" class="editor" style="display:none">
+        <div class="idea-header">
+          <div class="idea-tag" id="idea-tag"></div>
+          <div class="idea-title" id="idea-title"></div>
+        </div>
+        <div class="editor-scroll">
+          <textarea id="draft" placeholder="Développe cette idée en 250 mots maximum…" oninput="onDraftInput()" rows="7"></textarea>
+          <div class="word-bar">
+            <span class="word-count" id="word-count">0 / 250</span>
+            <div class="meter-track"><div class="meter-fill" id="meter-fill"></div></div>
+          </div>
+          <div class="editor-tabs">
+            <button class="etab active" onclick="switchTab('links')">↔ Liens</button>
+            <button class="etab" onclick="switchTab('refs')">📚 Références</button>
+          </div>
+          <!-- Links tab -->
+          <div class="tab-panel active" id="tab-links">
+            <div class="linked-chips" id="linked-chips"></div>
+            <input class="link-search" type="text" placeholder="Rechercher un fragment à lier…" oninput="searchLinks(this.value)" id="link-search"/>
+            <div class="link-results" id="link-results"></div>
+          </div>
+          <!-- Refs tab -->
+          <div class="tab-panel" id="tab-refs">
+            <div class="ref-type-row">
+              <button class="ref-type-btn active" onclick="setRefType(this,'📖','Livre')">📖 Livre</button>
+              <button class="ref-type-btn" onclick="setRefType(this,'🎬','Vidéo')">🎬 Vidéo</button>
+              <button class="ref-type-btn" onclick="setRefType(this,'🔗','Lien')">🔗 Lien</button>
+              <button class="ref-type-btn" onclick="setRefType(this,'🎙️','Podcast')">🎙️ Podcast</button>
+              <button class="ref-type-btn" onclick="setRefType(this,'📄','Article')">📄 Article</button>
+              <button class="ref-type-btn" onclick="setRefType(this,'💬','Citation')">💬 Citation</button>
+            </div>
+            <input class="ref-text-input" type="text" id="ref-input" placeholder="Titre, auteur, URL…"/>
+            <button class="btn-add-ref" onclick="addRef()">+ Ajouter la référence</button>
+            <div class="refs-list" id="refs-list"></div>
+          </div>
+        </div>
+        <div class="editor-footer">
+          <button class="btn-save" id="btn-save" onclick="saveDraft()">Sauvegarder</button>
+          <button class="btn-validate" onclick="validateFragment()">Valider →</button>
+          <button class="btn-skip" onclick="pickRandom()">↺</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div id="v-stats" class="view">
+      <div class="stats-wrap">
+        <div class="streak-card">
+          <div class="streak-fire">🔥</div>
+          <div>
+            <div class="streak-val" id="streak-val">0</div>
+            <div class="streak-label">jours consécutifs</div>
+          </div>
+          <div class="streak-best">
+            <div class="streak-best-label">meilleur</div>
+            <div class="streak-best-val" id="best-streak">0</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-label">Défi de la semaine</div>
+          <div class="challenge-card">
+            <div class="challenge-title" id="challenge-title">Valider 5 fragments cette semaine</div>
+            <div class="challenge-track"><div class="challenge-fill" id="challenge-fill" style="width:0%"></div></div>
+            <div class="challenge-label" id="challenge-label">0 / 5</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-label">Statistiques</div>
+          <div class="stats-grid">
+            <div class="stat-card"><div class="stat-val" id="s-total">0</div><div class="stat-label">idées totales</div></div>
+            <div class="stat-card"><div class="stat-val green" id="s-done">0</div><div class="stat-label">fragments rédigés</div><div class="stat-sub" id="s-pct">0%</div></div>
+            <div class="stat-card"><div class="stat-val terra" id="s-words">0</div><div class="stat-label">mots écrits</div><div class="stat-sub" id="s-pages">~0 pages</div></div>
+            <div class="stat-card"><div class="stat-val" id="s-refs">0</div><div class="stat-label">références</div></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-label">Badges</div>
+          <div class="badges-grid" id="badges-grid"></div>
+        </div>
+
+        <div>
+          <div class="section-label">Activité — 28 derniers jours</div>
+          <div class="cal-grid" id="cal-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IDEAS -->
+    <div id="v-ideas" class="view">
+      <div class="ideas-wrap">
+        <input class="search-input" type="text" placeholder="Rechercher…" oninput="filterIdeas(this.value)"/>
+        <div class="filter-row">
+          <button class="filter-chip active" onclick="setFilter(this,'all')">Toutes</button>
+          <button class="filter-chip" onclick="setFilter(this,'pending')">En attente</button>
+          <button class="filter-chip" onclick="setFilter(this,'draft')">Brouillons</button>
+          <button class="filter-chip" onclick="setFilter(this,'done')">Traités</button>
+          <button class="filter-chip" onclick="setFilter(this,'linked')">Liés</button>
+        </div>
+        <div id="ideas-list"></div>
+      </div>
+    </div>
+
+    <!-- READ -->
+    <div id="v-read" class="view">
+      <div class="read-wrap">
+        <div class="read-header">
+          <button class="back-btn" onclick="goBack()">‹ Retour</button>
+          <div class="idea-tag" id="read-tag"></div>
+          <div class="idea-title" id="read-title"></div>
+        </div>
+        <div class="read-scroll">
+          <div class="read-text-card">
+            <div class="read-text" id="read-text"></div>
+            <div class="word-bar" style="margin-top:10px">
+              <span class="word-count" id="read-wc" style="color:var(--ink-dim)"></span>
+              <div class="meter-track"><div class="meter-fill" id="read-meter" style="background:var(--sauge)"></div></div>
+            </div>
+          </div>
+          <div id="read-links-section"></div>
+          <div id="read-refs-section"></div>
+        </div>
+        <div class="read-footer">
+          <button class="btn-modify" onclick="openEditMode()">Modifier</button>
+          <button class="btn-reopen" onclick="reopenIdea()">Rouvrir</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EDIT -->
+    <div id="v-edit" class="view">
+      <div class="read-wrap">
+        <div class="read-header">
+          <button class="back-btn" onclick="cancelEdit()">‹ Annuler</button>
+          <div class="idea-tag" id="edit-tag"></div>
+          <div class="idea-title" id="edit-title"></div>
+        </div>
+        <div class="read-scroll">
+          <textarea id="edit-draft" placeholder="Modifie ce fragment…" oninput="onEditInput()" rows="8"></textarea>
+          <div class="word-bar">
+            <span class="word-count" id="edit-wc">0 / 250</span>
+            <div class="meter-track"><div class="meter-fill" id="edit-meter"></div></div>
+          </div>
+          <div>
+            <div class="section-label">Fragments liés</div>
+            <div class="linked-chips" id="edit-linked-chips"></div>
+            <input class="link-search" type="text" placeholder="Ajouter un lien…" oninput="searchEditLinks(this.value)" id="edit-link-search"/>
+            <div class="link-results" id="edit-link-results"></div>
+          </div>
+        </div>
+        <div class="read-footer">
+          <button class="btn-modify" onclick="cancelEdit()">Annuler</button>
+          <button class="btn-validate" onclick="saveEdit()" style="flex:2">Sauvegarder</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADD -->
+    <div id="v-add" class="view">
+      <div class="add-wrap">
+        <div>
+          <div class="form-label">Nouvelles idées</div>
+          <textarea id="add-textarea" placeholder="Une idée par ligne…&#10;&#10;La patience comme stratégie&#10;Ce que l'échec enseigne vraiment&#10;Pourquoi le cadre libère…" oninput="updateDetected()"></textarea>
+        </div>
+        <div class="add-hint">Une idée par ligne. Colle autant de titres que tu veux, puis valide.</div>
+        <div class="detected" id="detected"></div>
+        <button class="btn-add" onclick="addIdeas()">Ajouter →</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Navbar -->
+  <div id="navbar">
+    <button class="nav-item active" onclick="switchView('write',this)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polyline points="5,19 8,14 12,16 16,8 19,5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="8" x2="19" y2="5" stroke="var(--terracotta)" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="16" r="1.2" fill="var(--terracotta)"/></svg>
+      <span>Écrire</span>
+    </button>
+    <button class="nav-item" onclick="switchView('stats',this)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polygon points="12,4 17,8 19,14 15,19 9,19 5,14 7,8" stroke="currentColor" stroke-width="1.3" fill="none"/><polyline points="12,4 13,10 11,14 12,19" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="12" cy="4" r="1.2" fill="currentColor"/></svg>
+      <span>Stats</span>
+    </button>
+    <button class="nav-item" onclick="switchView('ideas',this)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polygon points="6,5 10,4 14,6 15,10 13,14 9,16 5,14 4,10" stroke="currentColor" stroke-width="1.3" fill="none"/><line x1="14" y1="8" x2="19" y2="8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="14" y1="11" x2="21" y2="11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="14" y1="14" x2="19" y2="14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      <span>Idées</span>
+    </button>
+    <button class="nav-item" onclick="switchView('add',this)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polygon points="12,3 15,7 19,8 17,12 19,16 15,17 12,21 9,17 5,16 7,12 5,8 9,7" stroke="currentColor" stroke-width="1.3" fill="none"/><line x1="12" y1="9" x2="12" y2="15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="9" y1="12" x2="15" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Ajouter</span>
+    </button>
+  </div>
+</div>
+
+<div id="notif"></div>
+
+<script>
+const SUPABASE_URL = 'https://dxvitpklayuioxtpygvz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4dml0cGtsYXl1aW94dHB5Z3Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NDYxMDcsImV4cCI6MjA5MTIyMjEwN30.-zxDu_NIr4B4TPzOgZRki2Pm-qOkI1ovf7qbq-1s2qc';
+
+// ===== SUPABASE CLIENT =====
+const db = {
+  async req(method, table, opts = {}) {
+    let url = `${SUPABASE_URL}/rest/v1/${table}`;
+    const params = [];
+    if (opts.select) params.push(`select=${opts.select}`);
+    if (opts.filter) params.push(opts.filter);
+    if (opts.order) params.push(`order=${opts.order}`);
+    if (params.length) url += '?' + params.join('&');
+    const headers = { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Prefer': 'return=representation' };
+    const res = await fetch(url, { method, headers, body: opts.body ? JSON.stringify(opts.body) : undefined });
+    if (!res.ok) { const e = await res.text(); throw new Error(e); }
+    const text = await res.text();
+    return text ? JSON.parse(text) : [];
+  },
+  get: (t, o) => db.req('GET', t, o),
+  post: (t, b) => db.req('POST', t, { body: b }),
+  patch: (t, filter, b) => db.req('PATCH', t, { filter, body: b }),
+  delete: (t, filter) => db.req('DELETE', t, { filter }),
+};
+
+// ===== STATE =====
+let ideas = [], fragments = {}, links = {}, refs = {};
+let currentId = null, readId = null, editId = null;
+let currentTab = 'links', currentRefType = { emoji: '📖', label: 'Livre' };
+let ideasFilter = 'all', ideasSearch = '';
+let streak = 0, bestStreak = 0, activityDays = {};
+let prevView = 'write';
+
+// ===== HELPERS =====
+const $ = id => document.getElementById(id);
+function cw(t) { return t && t.trim() ? t.trim().split(/\s+/).length : 0; }
+function today() { return new Date().toISOString().split('T')[0]; }
+function fmt(n) { return n >= 1000 ? (n/1000).toFixed(1)+'k' : n; }
+function notify(msg) {
+  const el = $('notif'); el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ===== LOAD =====
+async function loadAll() {
+  try {
+    const [ideasData, fragsData, linksData, refsData, actData] = await Promise.all([
+      db.get('ideas', { select: '*', order: 'created_at.asc' }),
+      db.get('fragments', { select: '*' }),
+      db.get('fragment_links', { select: '*' }),
+      db.get('biblio_refs', { select: '*' }),
+      db.get('activity', { select: '*', order: 'day.desc' }),
+    ]);
+    ideas = ideasData || [];
+    fragments = {};
+    (fragsData || []).forEach(f => fragments[f.idea_id] = f);
+    links = {};
+    (linksData || []).forEach(l => {
+      if (!links[l.from_idea_id]) links[l.from_idea_id] = [];
+      if (!links[l.to_idea_id]) links[l.to_idea_id] = [];
+      if (!links[l.from_idea_id].includes(l.to_idea_id)) links[l.from_idea_id].push(l.to_idea_id);
+      if (!links[l.to_idea_id].includes(l.from_idea_id)) links[l.to_idea_id].push(l.from_idea_id);
+    });
+    refs = {};
+    (refsData || []).forEach(r => { if (!refs[r.idea_id]) refs[r.idea_id] = []; refs[r.idea_id].push(r); });
+    activityDays = {};
+    (actData || []).forEach(a => activityDays[a.day] = a.count);
+    computeStreak();
+    updateTopStreak();
+    updateEmptyState();
+    $('loading').classList.add('hidden');
+  } catch(e) {
+    console.error(e);
+    $('loading').classList.add('hidden');
+    notify('Erreur de connexion — mode hors ligne');
+  }
+}
+
+// ===== NAVIGATION =====
+function switchView(v, btn) {
+  if (['write','stats','ideas','add'].includes(v)) prevView = v;
+  document.querySelectorAll('.view').forEach(el => { el.classList.remove('active'); el.style.display = ''; });
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const el = $('v-'+v);
+  if (el) { el.classList.add('active'); if (v === 'write') el.style.display = 'flex'; }
+  if (btn) btn.classList.add('active');
+  if (v === 'stats') renderStats();
+  if (v === 'ideas') renderIdeas();
+  $('main').scrollTop = 0;
+}
+
+function goBack() { switchView(prevView, document.querySelector('.nav-item')); }
+
+// ===== WRITE =====
+function updateEmptyState() {
+  const rem = ideas.filter(i => !i.done).length;
+  $('empty-label').textContent = rem === 0 ? 'Toutes les idées ont été traitées !' : `${rem} idée${rem > 1 ? 's' : ''} en attente`;
+  const btn = $('btn-pick');
+  if (btn) btn.style.display = rem === 0 ? 'none' : '';
+}
+
+async function pickRandom() {
+  const pool = ideas.filter(i => !i.done);
+  if (!pool.length) return;
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  await openIdea(pick.id);
+}
+
+async function openIdea(id) {
+  currentId = id;
+  const idea = ideas.find(i => i.id === id);
+  const frag = fragments[id];
+  const idx = ideas.findIndex(i => i.id === id);
+  const rem = ideas.filter(i => !i.done).length;
+
+  $('idea-tag').textContent = `Idée n° ${idx + 1} · ${rem} restante${rem > 1 ? 's' : ''}`;
+  $('idea-title').textContent = idea.title;
+  $('draft').value = frag?.text || '';
+  $('draft').classList.remove('over');
+  $('btn-save').textContent = 'Sauvegarder';
+  $('btn-save').classList.remove('saved');
+  switchTab('links');
+  $('link-search').value = '';
+  renderLinkedChips();
+  renderLinkResults('');
+  renderRefsList();
+  updateWordBar();
+  $('write-empty').style.display = 'none';
+  $('editor').style.display = 'flex';
+  setTimeout(() => $('draft').focus(), 100);
+}
+
+function onDraftInput() {
+  $('btn-save').textContent = 'Sauvegarder';
+  $('btn-save').classList.remove('saved');
+  updateWordBar();
+}
+
+function updateWordBar() {
+  const w = cw($('draft').value);
+  const pct = Math.min(w / 250 * 100, 100);
+  $('word-count').textContent = `${w} / 250`;
+  $('word-count').style.color = w > 250 ? 'var(--terracotta)' : w > 200 ? '#C4A050' : 'var(--ink-dim)';
+  $('meter-fill').style.width = pct + '%';
+  $('meter-fill').style.background = w > 250 ? 'var(--terracotta)' : w > 200 ? '#C4A050' : 'var(--sauge)';
+  $('draft').classList.toggle('over', w > 250);
+}
+
+async function saveDraft() {
+  if (!currentId) return;
+  const text = $('draft').value;
+  try {
+    if (fragments[currentId]) {
+      await db.patch('fragments', `idea_id=eq.${currentId}`, { text });
+      fragments[currentId].text = text;
+    } else {
+      const res = await db.post('fragments', { idea_id: currentId, text });
+      fragments[currentId] = res[0];
+    }
+    await recordActivity();
+    $('btn-save').textContent = '✓ Sauvegardé';
+    $('btn-save').classList.add('saved');
+    notify('Sauvegardé');
+  } catch(e) { notify('Erreur lors de la sauvegarde'); }
+}
+
+async function validateFragment() {
+  if (!currentId) return;
+  const text = $('draft').value;
+  try {
+    const now = new Date().toISOString();
+    if (fragments[currentId]) {
+      await db.patch('fragments', `idea_id=eq.${currentId}`, { text, validated_at: now });
+      fragments[currentId].text = text; fragments[currentId].validated_at = now;
+    } else {
+      const res = await db.post('fragments', { idea_id: currentId, text, validated_at: now });
+      fragments[currentId] = res[0];
+    }
+    await db.patch('ideas', `id=eq.${currentId}`, { done: true });
+    ideas = ideas.map(i => i.id === currentId ? { ...i, done: true } : i);
+    await recordActivity();
+    computeStreak(); updateTopStreak();
+    notify('Fragment validé ✓');
+    currentId = null;
+    $('editor').style.display = 'none';
+    $('write-empty').style.display = '';
+    updateEmptyState();
+  } catch(e) { notify('Erreur lors de la validation'); }
+}
+
+// ===== TABS =====
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.etab').forEach((el, i) => el.classList.toggle('active', (i === 0 && tab === 'links') || (i === 1 && tab === 'refs')));
+  $('tab-links').classList.toggle('active', tab === 'links');
+  $('tab-refs').classList.toggle('active', tab === 'refs');
+}
+
+// ===== LINKS =====
+function renderLinkedChips() {
+  const linked = (links[currentId] || []);
+  const el = $('linked-chips');
+  if (!linked.length) { el.innerHTML = '<span style="font-size:12px;color:var(--ink-dim)">Aucun lien pour l\'instant.</span>'; return; }
+  el.innerHTML = linked.map(lid => {
+    const idea = ideas.find(i => i.id === lid);
+    return idea ? `<div class="linked-chip"><span class="chip-arr">↔</span><span>${idea.title}</span><button class="chip-rm" onclick="removeLink('${lid}')">×</button></div>` : '';
+  }).join('');
+}
+
+function searchLinks(q) { renderLinkResults(q); }
+function renderLinkResults(q) {
+  const linked = links[currentId] || [];
+  const results = ideas.filter(i => i.id !== currentId && !linked.includes(i.id) && (!q || i.title.toLowerCase().includes(q.toLowerCase()))).slice(0, 5);
+  $('link-results').innerHTML = results.map(i => `
+    <button class="link-result fade-up" onclick="addLink('${i.id}')">
+      <span>${i.title}</span>
+      <span class="link-status">${i.done ? '✓' : '◦'}</span>
+    </button>`).join('');
+}
+
+async function addLink(targetId) {
+  if (!currentId) return;
+  try {
+    await db.post('fragment_links', { from_idea_id: currentId, to_idea_id: targetId });
+    if (!links[currentId]) links[currentId] = [];
+    if (!links[targetId]) links[targetId] = [];
+    links[currentId].push(targetId);
+    links[targetId].push(currentId);
+    renderLinkedChips();
+    renderLinkResults($('link-search').value);
+    notify('Lien ajouté');
+  } catch(e) { notify('Lien déjà existant'); }
+}
+
+async function removeLink(targetId) {
+  if (!currentId) return;
+  try {
+    await db.delete('fragment_links', `from_idea_id=eq.${currentId}&to_idea_id=eq.${targetId}`);
+    await db.delete('fragment_links', `from_idea_id=eq.${targetId}&to_idea_id=eq.${currentId}`);
+    links[currentId] = (links[currentId] || []).filter(l => l !== targetId);
+    links[targetId] = (links[targetId] || []).filter(l => l !== currentId);
+    renderLinkedChips();
+    renderLinkResults($('link-search').value);
+  } catch(e) {}
+}
+
+// ===== REFS =====
+function setRefType(btn, emoji, label) {
+  document.querySelectorAll('.ref-type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentRefType = { emoji, label };
+}
+
+async function addRef() {
+  if (!currentId) return;
+  const val = $('ref-input').value.trim();
+  if (!val) return;
+  try {
+    const res = await db.post('biblio_refs', { idea_id: currentId, type: currentRefType.label, emoji: currentRefType.emoji, text: val });
+    if (!refs[currentId]) refs[currentId] = [];
+    refs[currentId].push(res[0]);
+    $('ref-input').value = '';
+    renderRefsList();
+    notify('Référence ajoutée');
+  } catch(e) { notify('Erreur'); }
+}
+
+async function removeRef(refId, ideaId) {
+  try {
+    await db.delete('biblio_refs', `id=eq.${refId}`);
+    refs[ideaId] = (refs[ideaId] || []).filter(r => r.id !== refId);
+    renderRefsList();
+  } catch(e) {}
+}
+
+function renderRefsList() {
+  const list = refs[currentId] || [];
+  $('refs-list').innerHTML = list.length ? list.map(r => `
+    <div class="ref-item fade-up">
+      <span class="ref-emoji">${r.emoji}</span>
+      <div class="ref-body">
+        <div class="ref-type-label">${r.type}</div>
+        <div class="ref-text">${r.text}</div>
+      </div>
+      <button class="ref-rm" onclick="removeRef('${r.id}','${currentId}')">×</button>
+    </div>`).join('') : '<div style="font-size:12px;color:var(--ink-dim)">Aucune référence.</div>';
+}
+
+// ===== IDEAS VIEW =====
+function filterIdeas(q) { ideasSearch = q; renderIdeas(); }
+function setFilter(btn, f) {
+  ideasFilter = f;
+  document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderIdeas();
+}
+
+function renderIdeas() {
+  let list = [...ideas];
+  if (ideasSearch) list = list.filter(i => i.title.toLowerCase().includes(ideasSearch.toLowerCase()));
+  if (ideasFilter === 'pending') list = list.filter(i => !i.done && !fragments[i.id]?.text);
+  if (ideasFilter === 'draft') list = list.filter(i => !i.done && fragments[i.id]?.text);
+  if (ideasFilter === 'done') list = list.filter(i => i.done);
+  if (ideasFilter === 'linked') list = list.filter(i => (links[i.id] || []).length > 0);
+
+  const done = list.filter(i => i.done), pending = list.filter(i => !i.done);
+  let html = '';
+
+  if (pending.length) {
+    html += `<div class="ideas-section"><div class="ideas-section-label">En attente — ${pending.length}</div>`;
+    html += pending.map(idea => ideaRowHTML(idea)).join('');
+    html += '</div>';
+  }
+  if (done.length) {
+    html += `<div class="ideas-section"><div class="ideas-section-label">Traités — ${done.length}</div>`;
+    html += done.map(idea => ideaRowHTML(idea)).join('');
+    html += '</div>';
+  }
+  if (!list.length) html = '<div style="color:var(--ink-dim);font-size:13px;padding:20px 0;text-align:center">Aucune idée.</div>';
+
+  $('ideas-list').innerHTML = html;
+}
+
+function ideaRowHTML(idea) {
+  const frag = fragments[idea.id];
+  const w = frag?.text ? cw(frag.text) : 0;
+  const lcount = (links[idea.id] || []).length;
+  const rcount = (refs[idea.id] || []).length;
+  return `<div class="idea-row ${idea.done ? 'done' : ''} fade-up">
+    <span class="idea-bullet ${idea.done ? 'done' : ''}">${idea.done ? '✓' : '◦'}</span>
+    <div class="idea-row-body">
+      <div class="idea-row-title">${idea.title}</div>
+      <div class="idea-row-meta">
+        ${w ? `<span class="meta-tag green">${w} mots</span>` : ''}
+        ${lcount ? `<span class="meta-tag terra">↔ ${lcount}</span>` : ''}
+        ${rcount ? `<span class="meta-tag">📚 ${rcount}</span>` : ''}
+        ${!idea.done && frag?.text ? '<span class="meta-tag">brouillon</span>' : ''}
+      </div>
+    </div>
+    <button class="idea-row-btn" onclick="openReadOrWrite('${idea.id}')">${idea.done ? 'Relire' : 'Écrire'}</button>
+  </div>`;
+}
+
+async function openReadOrWrite(id) {
+  const idea = ideas.find(i => i.id === id);
+  if (idea.done) openReadView(id);
+  else { await openIdea(id); switchView('write', document.querySelector('.nav-item')); }
+}
+
+// ===== READ VIEW =====
+function openReadView(id) {
+  readId = id;
+  const idea = ideas.find(i => i.id === id);
+  const frag = fragments[id];
+  const idx = ideas.findIndex(i => i.id === id);
+  $('read-tag').textContent = `Fragment traité · n° ${idx + 1}`;
+  $('read-title').textContent = idea.title;
+  $('read-text').textContent = frag?.text || '';
+  const w = cw(frag?.text || '');
+  $('read-wc').textContent = `${w} / 250 mots`;
+  $('read-meter').style.width = Math.min(w/250*100,100) + '%';
+
+  // Links
+  const linked = (links[id] || []);
+  $('read-links-section').innerHTML = linked.length ? `
+    <div><div class="section-label">Fragments liés</div>
+    <div class="linked-chips">${linked.map(lid => {
+      const li = ideas.find(i => i.id === lid);
+      return li ? `<div class="linked-chip"><span class="chip-arr">↔</span><span>${li.title}</span></div>` : '';
+    }).join('')}</div></div>` : '';
+
+  // Refs
+  const refList = refs[id] || [];
+  $('read-refs-section').innerHTML = refList.length ? `
+    <div><div class="section-label">Références</div>
+    <div class="refs-list">${refList.map(r => `
+      <div class="ref-item"><span class="ref-emoji">${r.emoji}</span>
+      <div class="ref-body"><div class="ref-type-label">${r.type}</div><div class="ref-text">${r.text}</div></div>
+      </div>`).join('')}</div></div>` : '';
+
+  switchView('read', null);
+}
+
+function openEditMode() {
+  editId = readId;
+  const idea = ideas.find(i => i.id === editId);
+  const frag = fragments[editId];
+  const idx = ideas.findIndex(i => i.id === editId);
+  $('edit-tag').textContent = `Modification · n° ${idx + 1}`;
+  $('edit-title').textContent = idea.title;
+  $('edit-draft').value = frag?.text || '';
+  onEditInput();
+  renderEditLinks();
+  $('edit-link-search').value = '';
+  $('edit-link-results').innerHTML = '';
+  switchView('edit', null);
+}
+
+function onEditInput() {
+  const w = cw($('edit-draft').value);
+  $('edit-wc').textContent = `${w} / 250`;
+  $('edit-wc').style.color = w > 250 ? 'var(--terracotta)' : 'var(--ink-dim)';
+  $('edit-meter').style.width = Math.min(w/250*100,100) + '%';
+  $('edit-meter').style.background = w > 250 ? 'var(--terracotta)' : 'var(--sauge)';
+}
+
+function renderEditLinks() {
+  const linked = links[editId] || [];
+  $('edit-linked-chips').innerHTML = linked.length ? linked.map(lid => {
+    const li = ideas.find(i => i.id === lid);
+    return li ? `<div class="linked-chip"><span class="chip-arr">↔</span><span>${li.title}</span><button class="chip-rm" onclick="removeEditLink('${lid}')">×</button></div>` : '';
+  }).join('') : '<span style="font-size:12px;color:var(--ink-dim)">Aucun lien.</span>';
+}
+
+async function removeEditLink(targetId) {
+  const from = editId;
+  try {
+    await db.delete('fragment_links', `from_idea_id=eq.${from}&to_idea_id=eq.${targetId}`);
+    await db.delete('fragment_links', `from_idea_id=eq.${targetId}&to_idea_id=eq.${from}`);
+    links[from] = (links[from] || []).filter(l => l !== targetId);
+    links[targetId] = (links[targetId] || []).filter(l => l !== from);
+    renderEditLinks();
+  } catch(e) {}
+}
+
+function searchEditLinks(q) {
+  const linked = links[editId] || [];
+  const results = ideas.filter(i => i.id !== editId && !linked.includes(i.id) && (!q || i.title.toLowerCase().includes(q.toLowerCase()))).slice(0, 4);
+  $('edit-link-results').innerHTML = results.map(i => `
+    <button class="link-result" onclick="addEditLink('${i.id}')">
+      <span>${i.title}</span><span class="link-status">${i.done ? '✓' : '◦'}</span>
+    </button>`).join('');
+}
+
+async function addEditLink(targetId) {
+  try {
+    await db.post('fragment_links', { from_idea_id: editId, to_idea_id: targetId });
+    if (!links[editId]) links[editId] = [];
+    if (!links[targetId]) links[targetId] = [];
+    links[editId].push(targetId);
+    links[targetId].push(editId);
+    renderEditLinks();
+    $('edit-link-results').innerHTML = '';
+    $('edit-link-search').value = '';
+    notify('Lien ajouté');
+  } catch(e) {}
+}
+
+async function saveEdit() {
+  const text = $('edit-draft').value;
+  try {
+    if (fragments[editId]) {
+      await db.patch('fragments', `idea_id=eq.${editId}`, { text });
+      fragments[editId].text = text;
+    } else {
+      const res = await db.post('fragments', { idea_id: editId, text });
+      fragments[editId] = res[0];
+    }
+    notify('Fragment mis à jour ✓');
+    readId = editId;
+    openReadView(editId);
+  } catch(e) { notify('Erreur'); }
+}
+
+function cancelEdit() { openReadView(readId); }
+
+async function reopenIdea() {
+  try {
+    await db.patch('ideas', `id=eq.${readId}`, { done: false });
+    ideas = ideas.map(i => i.id === readId ? { ...i, done: false } : i);
+    notify('Idée remise en attente');
+    switchView('ideas', document.querySelectorAll('.nav-item')[2]);
+    renderIdeas();
+  } catch(e) { notify('Erreur'); }
+}
+
+// ===== ADD =====
+function updateDetected() {
+  const lines = $('add-textarea').value.split('\n').filter(l => l.trim()).length;
+  $('detected').textContent = lines ? `${lines} idée${lines > 1 ? 's' : ''} détectée${lines > 1 ? 's' : ''}` : '';
+}
+
+async function addIdeas() {
+  const lines = $('add-textarea').value.split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return;
+  try {
+    const rows = lines.map((title, i) => ({ title, done: false, position: ideas.length + i }));
+    const res = await db.post('ideas', rows);
+    ideas.push(...(res || []));
+    $('add-textarea').value = '';
+    $('detected').textContent = '';
+    updateEmptyState();
+    notify(`${lines.length} idée${lines.length > 1 ? 's' : ''} ajoutée${lines.length > 1 ? 's' : ''}`);
+  } catch(e) { notify('Erreur lors de l\'ajout'); }
+}
+
+// ===== ACTIVITY & STREAK =====
+async function recordActivity() {
+  const d = today();
+  try {
+    if (activityDays[d]) {
+      await db.patch('activity', `day=eq.${d}`, { count: activityDays[d] + 1 });
+      activityDays[d]++;
+    } else {
+      await db.post('activity', { day: d, count: 1 });
+      activityDays[d] = 1;
+    }
+  } catch(e) {}
+}
+
+function computeStreak() {
+  streak = 0;
+  const now = new Date();
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(now.getTime() - i * 86400000).toISOString().split('T')[0];
+    if (activityDays[d]) streak++;
+    else if (i > 0) break;
+  }
+  bestStreak = Math.max(streak, bestStreak);
+}
+
+function updateTopStreak() {
+  $('top-streak').textContent = streak > 0 ? `🔥 ${streak}j` : '';
+  $('top-streak').style.display = streak > 0 ? '' : 'none';
+}
+
+// ===== STATS =====
+const BADGES = [
+  { id: 'first', icon: '🖊️', name: 'Premier fragment', cond: () => Object.values(fragments).some(f => f.validated_at) },
+  { id: 'five', icon: '🌱', name: '5 fragments', cond: () => ideas.filter(i => i.done).length >= 5 },
+  { id: 'ten', icon: '🌿', name: '10 fragments', cond: () => ideas.filter(i => i.done).length >= 10 },
+  { id: 'twenty', icon: '🌳', name: '20 fragments', cond: () => ideas.filter(i => i.done).length >= 20 },
+  { id: 'half', icon: '⚡', name: 'Moitié du livre', cond: () => ideas.length > 0 && ideas.filter(i => i.done).length >= ideas.length / 2 },
+  { id: 's3', icon: '🔥', name: '3 jours de suite', cond: () => streak >= 3 },
+  { id: 's7', icon: '🏆', name: '7 jours de suite', cond: () => streak >= 7 },
+  { id: 'refs', icon: '📚', name: '10 références', cond: () => Object.values(refs).reduce((a, r) => a + r.length, 0) >= 10 },
+  { id: 'links', icon: '🕸️', name: '5 liens créés', cond: () => Object.values(links).reduce((a, l) => a + l.length, 0) >= 5 },
+];
+
+function renderStats() {
+  const done = ideas.filter(i => i.done).length;
+  const total = ideas.length;
+  const allWords = Object.values(fragments).reduce((a, f) => a + cw(f.text || ''), 0);
+  const allRefs = Object.values(refs).reduce((a, r) => a + r.length, 0);
+  const pct = total ? Math.round(done / total * 100) : 0;
+
+  $('streak-val').textContent = streak;
+  $('best-streak').textContent = bestStreak;
+  $('s-total').textContent = total;
+  $('s-done').textContent = done;
+  $('s-pct').textContent = pct + '% du livre';
+  $('s-words').textContent = fmt(allWords);
+  $('s-pages').textContent = `~${Math.round(allWords / 275)} pages`;
+  $('s-refs').textContent = allRefs;
+
+  // Weekly challenge
+  const weekGoal = 5;
+  const now = new Date();
+  const weekDone = Object.entries(activityDays)
+    .filter(([d]) => (now - new Date(d)) < 7 * 86400000)
+    .reduce((a, [, v]) => a + v, 0);
+  $('challenge-fill').style.width = Math.min(weekDone / weekGoal * 100, 100) + '%';
+  $('challenge-label').textContent = `${Math.min(weekDone, weekGoal)} / ${weekGoal} accomplis`;
+
+  // Badges
+  $('badges-grid').innerHTML = BADGES.map(b => {
+    const earned = b.cond();
+    return `<div class="badge ${earned ? 'earned' : ''}">
+      <div class="badge-icon ${earned ? '' : 'badge-locked'}">${b.icon}</div>
+      <div class="badge-name">${b.name}</div>
+    </div>`;
+  }).join('');
+
+  // Calendar
+  const cal = $('cal-grid');
+  cal.innerHTML = '';
+  for (let i = 27; i >= 0; i--) {
+    const d = new Date(now.getTime() - i * 86400000).toISOString().split('T')[0];
+    const dot = document.createElement('div');
+    dot.className = 'cal-dot' + (activityDays[d] ? ' has' : '') + (d === today() ? ' today' : '');
+    dot.title = d;
+    cal.appendChild(dot);
+  }
+}
+
+// ===== PWA =====
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+// ===== INIT =====
+loadAll();
+</script>
+</body>
+</html>
