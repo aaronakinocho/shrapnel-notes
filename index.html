@@ -209,6 +209,14 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .read-footer { padding: 12px 18px; border-top: 1px solid var(--sable-mid); background: var(--sable); display: flex; gap: 8px; }
 .btn-modify { flex: 1; padding: 12px; border: 1.5px solid var(--sauge); border-radius: 10px; font-size: 13px; color: var(--sauge); }
 .btn-reopen { flex: 1; padding: 12px; border: 1px solid rgba(224,122,80,0.3); border-radius: 10px; font-size: 13px; color: var(--terracotta); background: rgba(224,122,80,0.06); }
+.btn-delete { flex: 1; padding: 12px; border: 1px solid rgba(180,50,50,0.3); border-radius: 10px; font-size: 13px; color: #c0392b; background: rgba(180,50,50,0.06); }
+.btn-pdf { flex: 1; padding: 12px; border: 1px solid rgba(74,124,89,0.3); border-radius: 10px; font-size: 13px; color: var(--sauge); background: rgba(74,124,89,0.06); }
+.delete-confirm { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-end; justify-content: center; z-index: 999; padding-bottom: var(--safe-bottom); }
+.delete-confirm-box { background: var(--sable); border-radius: 16px 16px 0 0; padding: 24px 20px; width: 100%; max-width: 500px; }
+.delete-confirm-title { font-size: 16px; font-weight: 500; color: var(--ink); margin-bottom: 8px; }
+.delete-confirm-sub { font-size: 13px; color: var(--ink-dim); margin-bottom: 20px; line-height: 1.5; }
+.delete-confirm-btns { display: flex; gap: 10px; }
+.idea-row-del { font-size: 11px; padding: 5px 10px; border: 1px solid rgba(180,50,50,0.25); border-radius: 7px; color: #c0392b; background: rgba(180,50,50,0.05); }
 
 /* EDIT MODE */
 #edit-draft { width: 100%; min-height: 200px; background: var(--white); border: 1.5px solid var(--sauge); border-radius: 12px; padding: 16px; font-family: Georgia, serif; font-size: 16px; color: var(--ink-mid); line-height: 1.85; resize: none; }
@@ -417,7 +425,9 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
         </div>
         <div class="read-footer">
           <button class="btn-modify" onclick="openEditMode()">Modifier</button>
+          <button class="btn-pdf" onclick="exportPDF()">PDF</button>
           <button class="btn-reopen" onclick="reopenIdea()">Rouvrir</button>
+          <button class="btn-delete" onclick="confirmDelete(readId)">🗑</button>
         </div>
       </div>
     </div>
@@ -436,11 +446,27 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
             <span class="word-count" id="edit-wc">0 / 250</span>
             <div class="meter-track"><div class="meter-fill" id="edit-meter"></div></div>
           </div>
-          <div>
-            <div class="section-label">Fragments liés</div>
+          <div class="editor-tabs">
+            <button class="etab active" onclick="switchEditTab('links')">↔ Liens</button>
+            <button class="etab" onclick="switchEditTab('refs')">📚 Références</button>
+          </div>
+          <div class="tab-panel active" id="etab-links">
             <div class="linked-chips" id="edit-linked-chips"></div>
             <input class="link-search" type="text" placeholder="Ajouter un lien…" oninput="searchEditLinks(this.value)" id="edit-link-search"/>
             <div class="link-results" id="edit-link-results"></div>
+          </div>
+          <div class="tab-panel" id="etab-refs">
+            <div class="ref-type-row">
+              <button class="ref-type-btn active" onclick="setEditRefType(this,'📖','Livre')">📖 Livre</button>
+              <button class="ref-type-btn" onclick="setEditRefType(this,'🎬','Vidéo')">🎬 Vidéo</button>
+              <button class="ref-type-btn" onclick="setEditRefType(this,'🔗','Lien')">🔗 Lien</button>
+              <button class="ref-type-btn" onclick="setEditRefType(this,'🎙️','Podcast')">🎙️ Podcast</button>
+              <button class="ref-type-btn" onclick="setEditRefType(this,'📄','Article')">📄 Article</button>
+              <button class="ref-type-btn" onclick="setEditRefType(this,'💬','Citation')">💬 Citation</button>
+            </div>
+            <input class="ref-text-input" type="text" id="edit-ref-input" placeholder="Titre, auteur, URL…"/>
+            <button class="btn-add-ref" onclick="addEditRef()">+ Ajouter la référence</button>
+            <div class="refs-list" id="edit-refs-list"></div>
           </div>
         </div>
         <div class="read-footer">
@@ -486,7 +512,19 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   </div>
 </div>
 
-<div id="notif"></div>
+<!-- Delete confirm modal -->
+<div id="delete-confirm" class="delete-confirm" style="display:none" onclick="if(event.target===this)closeDeleteConfirm()">
+  <div class="delete-confirm-box">
+    <div class="delete-confirm-title">Supprimer ce fragment ?</div>
+    <div class="delete-confirm-sub">Cette action est irréversible. Le texte, les liens et les références associés seront supprimés.</div>
+    <div class="delete-confirm-btns">
+      <button class="btn-save" style="flex:1" onclick="closeDeleteConfirm()">Annuler</button>
+      <button class="btn-validate" style="flex:1;background:#c0392b" id="confirm-del-btn">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <script>
 const SUPABASE_URL = 'https://dxvitpklayuioxtpygvz.supabase.co';
@@ -827,7 +865,10 @@ function ideaRowHTML(idea) {
         ${!idea.done && frag?.text ? '<span class="meta-tag">brouillon</span>' : ''}
       </div>
     </div>
-    <button class="idea-row-btn" onclick="openReadOrWrite('${idea.id}')">${idea.done ? 'Relire' : 'Écrire'}</button>
+    <div style="display:flex;gap:5px;flex-shrink:0">
+      <button class="idea-row-btn" onclick="openReadOrWrite('${idea.id}')">${idea.done ? 'Relire' : 'Écrire'}</button>
+      <button class="idea-row-del" onclick="confirmDelete('${idea.id}')">🗑</button>
+    </div>
   </div>`;
 }
 
@@ -880,9 +921,12 @@ function openEditMode() {
   $('edit-title').textContent = idea.title;
   $('edit-draft').value = frag?.text || '';
   onEditInput();
+  switchEditTab('links');
   renderEditLinks();
+  renderEditRefs();
   $('edit-link-search').value = '';
   $('edit-link-results').innerHTML = '';
+  $('edit-ref-input').value = '';
   switchView('edit', null);
 }
 
@@ -1071,6 +1115,195 @@ function renderStats() {
     dot.title = d;
     cal.appendChild(dot);
   }
+}
+
+// ===== DELETE =====
+let deleteTargetId = null;
+function confirmDelete(id) {
+  deleteTargetId = id;
+  $('delete-confirm').style.display = 'flex';
+  $('confirm-del-btn').onclick = executeDelete;
+}
+function closeDeleteConfirm() {
+  $('delete-confirm').style.display = 'none';
+  deleteTargetId = null;
+}
+async function executeDelete() {
+  const id = deleteTargetId;
+  if (!id) return;
+  closeDeleteConfirm();
+  try {
+    await db.delete('biblio_refs', `idea_id=eq.${id}`);
+    await db.delete('fragment_links', `from_idea_id=eq.${id}`);
+    await db.delete('fragment_links', `to_idea_id=eq.${id}`);
+    await db.delete('fragments', `idea_id=eq.${id}`);
+    await db.delete('ideas', `id=eq.${id}`);
+    ideas = ideas.filter(i => i.id !== id);
+    delete fragments[id];
+    delete refs[id];
+    Object.keys(links).forEach(k => { links[k] = (links[k] || []).filter(l => l !== id); });
+    delete links[id];
+    notify('Fragment supprimé');
+    if (readId === id || currentId === id) {
+      readId = null; currentId = null;
+      switchView('ideas', document.querySelectorAll('.nav-item')[2]);
+    }
+    renderIdeas();
+    updateEmptyState();
+  } catch(e) { notify('Erreur lors de la suppression'); }
+}
+
+// ===== PDF EXPORT =====
+function exportPDF() {
+  const idea = ideas.find(i => i.id === readId);
+  const frag = fragments[readId];
+  if (!idea || !frag?.text) { notify('Aucun texte à exporter'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const margin = 25, pageW = 210, maxW = pageW - margin * 2;
+  let y = 30;
+
+  // Header
+  doc.setFillColor(74, 124, 89);
+  doc.rect(0, 0, 210, 14, 'F');
+  doc.setTextColor(240, 247, 242);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Shrapnel Notes', margin, 9);
+  doc.text(new Date().toLocaleDateString('fr-FR'), 210 - margin, 9, { align: 'right' });
+
+  // Title
+  doc.setTextColor(28, 28, 28);
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bolditalic');
+  const titleLines = doc.splitTextToSize(idea.title, maxW);
+  doc.text(titleLines, margin, y);
+  y += titleLines.length * 9 + 6;
+
+  // Divider
+  doc.setDrawColor(200, 196, 190);
+  doc.setLineWidth(0.3);
+  doc.line(margin, y, 210 - margin, y);
+  y += 10;
+
+  // Body text
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(74, 66, 56);
+  const bodyLines = doc.splitTextToSize(frag.text, maxW);
+  bodyLines.forEach(line => {
+    if (y > 270) { doc.addPage(); y = 25; }
+    doc.text(line, margin, y);
+    y += 6.5;
+  });
+  y += 8;
+
+  // Word count
+  doc.setFontSize(8);
+  doc.setTextColor(155, 142, 126);
+  doc.text(`${cw(frag.text)} mots`, margin, y);
+  y += 12;
+
+  // Linked fragments
+  const linked = (links[readId] || []);
+  if (linked.length) {
+    if (y > 260) { doc.addPage(); y = 25; }
+    doc.setDrawColor(237, 229, 217);
+    doc.rect(margin, y, maxW, linked.length * 7 + 14, 'S');
+    doc.setFontSize(8);
+    doc.setTextColor(155, 142, 126);
+    doc.setFont('helvetica', 'bold');
+    doc.text('FRAGMENTS LIÉS', margin + 5, y + 8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(74, 66, 56);
+    linked.forEach((lid, i) => {
+      const li = ideas.find(x => x.id === lid);
+      if (li) doc.text(`↔  ${li.title}`, margin + 5, y + 15 + i * 7);
+    });
+    y += linked.length * 7 + 20;
+  }
+
+  // References
+  const refList = refs[readId] || [];
+  if (refList.length) {
+    if (y > 260) { doc.addPage(); y = 25; }
+    doc.setFontSize(8);
+    doc.setTextColor(155, 142, 126);
+    doc.setFont('helvetica', 'bold');
+    doc.text('RÉFÉRENCES', margin, y);
+    y += 7;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(74, 66, 56);
+    refList.forEach(r => {
+      if (y > 275) { doc.addPage(); y = 25; }
+      doc.setFontSize(8);
+      doc.setTextColor(155, 142, 126);
+      doc.text(r.type.toUpperCase(), margin, y);
+      doc.setTextColor(74, 66, 56);
+      doc.setFontSize(10);
+      const rlines = doc.splitTextToSize(r.text, maxW - 5);
+      doc.text(rlines, margin + 2, y + 5);
+      y += rlines.length * 5.5 + 8;
+    });
+  }
+
+  // Footer
+  doc.setFontSize(8);
+  doc.setTextColor(200, 196, 190);
+  doc.text('shrapnelnotes.com', 210 / 2, 290, { align: 'center' });
+
+  const filename = idea.title.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').slice(0, 40);
+  doc.save(`${filename}.pdf`);
+  notify('PDF exporté ✓');
+}
+
+// ===== EDIT TABS =====
+let currentEditRefType = { emoji: '📖', label: 'Livre' };
+
+function switchEditTab(tab) {
+  document.querySelectorAll('#v-edit .etab').forEach((el, i) => el.classList.toggle('active', (i === 0 && tab === 'links') || (i === 1 && tab === 'refs')));
+  $('etab-links').classList.toggle('active', tab === 'links');
+  $('etab-refs').classList.toggle('active', tab === 'refs');
+}
+
+function setEditRefType(btn, emoji, label) {
+  document.querySelectorAll('#etab-refs .ref-type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentEditRefType = { emoji, label };
+}
+
+async function addEditRef() {
+  const val = $('edit-ref-input').value.trim();
+  if (!val || !editId) return;
+  try {
+    const res = await db.post('biblio_refs', { idea_id: editId, type: currentEditRefType.label, emoji: currentEditRefType.emoji, text: val });
+    if (!refs[editId]) refs[editId] = [];
+    refs[editId].push(res[0]);
+    $('edit-ref-input').value = '';
+    renderEditRefs();
+    notify('Référence ajoutée');
+  } catch(e) { notify('Erreur'); }
+}
+
+async function removeEditRef(refId) {
+  try {
+    await db.delete('biblio_refs', `id=eq.${refId}`);
+    refs[editId] = (refs[editId] || []).filter(r => r.id !== refId);
+    renderEditRefs();
+  } catch(e) {}
+}
+
+function renderEditRefs() {
+  const list = refs[editId] || [];
+  $('edit-refs-list').innerHTML = list.length ? list.map(r => `
+    <div class="ref-item fade-up">
+      <span class="ref-emoji">${r.emoji}</span>
+      <div class="ref-body">
+        <div class="ref-type-label">${r.type}</div>
+        <div class="ref-text">${r.text}</div>
+      </div>
+      <button class="ref-rm" onclick="removeEditRef('${r.id}')">×</button>
+    </div>`).join('') : '<div style="font-size:12px;color:var(--ink-dim)">Aucune référence.</div>';
 }
 
 // ===== PWA =====
