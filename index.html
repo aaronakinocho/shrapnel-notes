@@ -224,30 +224,14 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .timer-display.running::before { content: '⏱ '; }
 
 /* Format bubble */
-.format-bubble { 
-  position: fixed; background: #2a2a2a; border-radius: 10px; 
-  padding: 6px 4px; display: none; gap: 2px; z-index: 9999; 
-  transform: translateX(-50%);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-  -webkit-user-select: none; user-select: none;
-}
+.format-bubble { position: fixed; background: var(--ink); border-radius: 10px; padding: 6px 8px; display: none; gap: 4px; z-index: 500; transform: translateX(-50%); }
 .format-bubble.show { display: flex; }
-.format-bubble::after {
-  content: ''; position: absolute; top: 100%; left: 50%;
-  transform: translateX(-50%);
-  border: 5px solid transparent; border-top-color: #2a2a2a;
-}
-.fmt-btn { 
-  color: #f0f7f2; font-size: 14px; padding: 6px 12px; 
-  border-radius: 6px; font-family: Georgia, serif; 
-  min-width: 36px; text-align: center;
-  -webkit-tap-highlight-color: transparent;
-}
-.fmt-btn:active { background: rgba(255,255,255,0.2); }
+.fmt-btn { color: var(--green-text); font-size: 13px; padding: 4px 8px; border-radius: 6px; font-family: Georgia, serif; transition: background 0.12s; }
+.fmt-btn:active { background: rgba(255,255,255,0.15); }
 .fmt-btn.bold { font-weight: bold; }
 .fmt-btn.italic { font-style: italic; }
 .fmt-btn.underline { text-decoration: underline; }
-.fmt-sep { width: 0.5px; background: rgba(255,255,255,0.25); margin: 4px 0; }
+.fmt-sep { width: 1px; background: rgba(255,255,255,0.2); margin: 2px 0; }
 
 /* Rich text editor */
 #draft-editor {
@@ -588,6 +572,12 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 <div id="notif"></div>
 
 <!-- Format bubble — global, fonctionne dans écriture ET édition -->
+<div class="format-bubble" id="format-bubble">
+  <button class="fmt-btn bold" onmousedown="event.preventDefault();applyFmt('bold')">G</button>
+  <button class="fmt-btn italic" onmousedown="event.preventDefault();applyFmt('italic')">I</button>
+  <button class="fmt-btn underline" onmousedown="event.preventDefault();applyFmt('underline')">S</button>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <script>
