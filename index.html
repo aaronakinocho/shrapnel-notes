@@ -1306,9 +1306,26 @@ function renderEditRefs() {
     </div>`).join('') : '<div style="font-size:12px;color:var(--ink-dim)">Aucune référence.</div>';
 }
 
-// ===== PWA =====
+// ===== PWA — mise à jour automatique =====
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    // Vérifie une mise à jour au chargement
+    reg.update();
+    // Quand une nouvelle version est détectée, l'active immédiatement
+    reg.addEventListener('updatefound', () => {
+      const newWorker = reg.installing;
+      newWorker.addEventListener('statechange', () => {
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          newWorker.postMessage('skipWaiting');
+        }
+      });
+    });
+  }).catch(() => {});
+  // Recharge la page quand le nouveau SW prend le contrôle
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) { refreshing = true; window.location.reload(); }
+  });
 }
 
 // ===== INIT =====
