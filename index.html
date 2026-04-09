@@ -224,28 +224,51 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .timer-display.running::before { content: '⏱ '; }
 
 /* Format bubble */
-.format-bubble { position: fixed; background: var(--ink); border-radius: 10px; padding: 6px 8px; display: none; gap: 4px; z-index: 500; transform: translateX(-50%); }
+.format-bubble { 
+  position: fixed; background: #2a2a2a; border-radius: 10px; 
+  padding: 6px 4px; display: none; gap: 2px; z-index: 9999; 
+  transform: translateX(-50%);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  -webkit-user-select: none; user-select: none;
+}
 .format-bubble.show { display: flex; }
-.fmt-btn { color: var(--green-text); font-size: 13px; padding: 4px 8px; border-radius: 6px; font-family: Georgia, serif; transition: background 0.12s; }
-.fmt-btn:active { background: rgba(255,255,255,0.15); }
+.format-bubble::after {
+  content: ''; position: absolute; top: 100%; left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent; border-top-color: #2a2a2a;
+}
+.fmt-btn { 
+  color: #f0f7f2; font-size: 14px; padding: 6px 12px; 
+  border-radius: 6px; font-family: Georgia, serif; 
+  min-width: 36px; text-align: center;
+  -webkit-tap-highlight-color: transparent;
+}
+.fmt-btn:active { background: rgba(255,255,255,0.2); }
 .fmt-btn.bold { font-weight: bold; }
 .fmt-btn.italic { font-style: italic; }
 .fmt-btn.underline { text-decoration: underline; }
-.fmt-sep { width: 1px; background: rgba(255,255,255,0.2); margin: 2px 0; }
+.fmt-sep { width: 0.5px; background: rgba(255,255,255,0.25); margin: 4px 0; }
 
 /* Rich text editor */
 #draft-editor {
   width: 100%; min-height: 180px;
   background: var(--white); border: 1.5px solid var(--sable-mid);
   border-radius: 12px; padding: 16px;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: Georgia, 'Times New Roman', serif !important;
   font-size: 16px; color: var(--ink-mid); line-height: 1.85;
   outline: none; transition: border-color 0.2s;
   white-space: pre-wrap; word-wrap: break-word;
 }
+#draft-editor * {
+  font-family: Georgia, 'Times New Roman', serif !important;
+  font-size: inherit; line-height: inherit;
+}
+#draft-editor b, #draft-editor strong { font-weight: bold; font-family: Georgia, 'Times New Roman', serif !important; }
+#draft-editor i, #draft-editor em { font-style: italic; font-family: Georgia, 'Times New Roman', serif !important; }
+#draft-editor u { text-decoration: underline; }
 #draft-editor:focus { border-color: var(--sauge); }
 #draft-editor.over { border-color: var(--terracotta); }
-#draft-editor:empty::before { content: attr(data-placeholder); color: var(--sable-dark); font-style: italic; pointer-events: none; }
+#draft-editor:empty::before { content: attr(data-placeholder); color: var(--sable-dark); font-style: italic; pointer-events: none; font-family: Georgia, 'Times New Roman', serif !important; }
 #draft-editor p { margin: 0 0 0.8em; }
 #draft-editor p:last-child { margin-bottom: 0; }
 
@@ -253,10 +276,11 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   width: 100%; min-height: 200px;
   background: var(--white); border: 1.5px solid var(--sauge);
   border-radius: 12px; padding: 16px;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: Georgia, 'Times New Roman', serif !important;
   font-size: 16px; color: var(--ink-mid); line-height: 1.85;
   outline: none; white-space: pre-wrap; word-wrap: break-word;
 }
+.edit-draft-field * { font-family: Georgia, 'Times New Roman', serif !important; font-size: inherit; }
 .edit-draft-field:empty::before { content: attr(data-placeholder); color: var(--sable-dark); font-style: italic; pointer-events: none; }
 
 /* ===== ADD ===== */
@@ -572,12 +596,6 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 <div id="notif"></div>
 
 <!-- Format bubble — global, fonctionne dans écriture ET édition -->
-<div class="format-bubble" id="format-bubble">
-  <button class="fmt-btn bold" onmousedown="event.preventDefault();applyFmt('bold')">G</button>
-  <button class="fmt-btn italic" onmousedown="event.preventDefault();applyFmt('italic')">I</button>
-  <button class="fmt-btn underline" onmousedown="event.preventDefault();applyFmt('underline')">S</button>
-</div>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <script>
