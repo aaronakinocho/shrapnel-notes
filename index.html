@@ -187,7 +187,8 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .filter-chip.active { border-color: var(--sauge); color: var(--sauge); background: rgba(74,124,89,0.07); }
 .ideas-section { margin-bottom: 20px; }
 .ideas-section-label { font-size: 10px; color: var(--ink-dim); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
-.idea-row { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; background: var(--white); border: 1px solid var(--sable-mid); border-radius: 12px; margin-bottom: 6px; transition: border-color 0.15s; }
+.idea-row { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; background: var(--white); border: 1px solid var(--sable-mid); border-radius: 12px; margin-bottom: 6px; transition: border-color 0.15s; cursor: pointer; }
+.idea-row:active { background: var(--sable); }
 .idea-row.done { opacity: 0.6; }
 .idea-bullet { font-size: 13px; flex-shrink: 0; margin-top: 1px; color: var(--sable-dark); }
 .idea-bullet.done { color: var(--sauge); }
@@ -219,8 +220,34 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .idea-row-del { font-size: 11px; padding: 5px 10px; border: 1px solid rgba(180,50,50,0.25); border-radius: 7px; color: #c0392b; background: rgba(180,50,50,0.05); }
 
 /* EDIT MODE */
-#edit-draft { width: 100%; min-height: 200px; background: var(--white); border: 1.5px solid var(--sauge); border-radius: 12px; padding: 16px; font-family: Georgia, serif; font-size: 16px; color: var(--ink-mid); line-height: 1.85; resize: none; }
-#edit-draft:focus { outline: none; }
+.timer-display { font-size: 11px; color: var(--sauge); font-variant-numeric: tabular-nums; min-width: 60px; }
+.timer-display.running::before { content: '⏱ '; }
+
+/* Format bubble */
+.format-bubble { position: fixed; background: var(--ink); border-radius: 10px; padding: 6px 8px; display: none; gap: 4px; z-index: 500; transform: translateX(-50%); }
+.format-bubble.show { display: flex; }
+.fmt-btn { color: var(--green-text); font-size: 13px; padding: 4px 8px; border-radius: 6px; font-family: Georgia, serif; transition: background 0.12s; }
+.fmt-btn:active { background: rgba(255,255,255,0.15); }
+.fmt-btn.bold { font-weight: bold; }
+.fmt-btn.italic { font-style: italic; }
+.fmt-btn.underline { text-decoration: underline; }
+.fmt-sep { width: 1px; background: rgba(255,255,255,0.2); margin: 2px 0; }
+
+/* Rich text editor */
+#draft-editor {
+  width: 100%; min-height: 180px;
+  background: var(--white); border: 1.5px solid var(--sable-mid);
+  border-radius: 12px; padding: 16px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 16px; color: var(--ink-mid); line-height: 1.85;
+  outline: none; transition: border-color 0.2s;
+  white-space: pre-wrap; word-wrap: break-word;
+}
+#draft-editor:focus { border-color: var(--sauge); }
+#draft-editor.over { border-color: var(--terracotta); }
+#draft-editor:empty::before { content: attr(data-placeholder); color: var(--sable-dark); font-style: italic; pointer-events: none; }
+#draft-editor p { margin: 0 0 0.8em; }
+#draft-editor p:last-child { margin-bottom: 0; }
 
 /* ===== ADD ===== */
 .add-wrap { padding: 24px 18px; display: flex; flex-direction: column; gap: 14px; }
@@ -305,10 +332,18 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
           <div class="idea-title" id="idea-title"></div>
         </div>
         <div class="editor-scroll">
-          <textarea id="draft" placeholder="Développe cette idée en 250 mots maximum…" oninput="onDraftInput()" rows="7"></textarea>
+          <!-- Format bubble -->
+          <div class="format-bubble" id="format-bubble">
+            <button class="fmt-btn bold" onmousedown="event.preventDefault();applyFmt('bold')">G</button>
+            <button class="fmt-btn italic" onmousedown="event.preventDefault();applyFmt('italic')">I</button>
+            <button class="fmt-btn underline" onmousedown="event.preventDefault();applyFmt('underline')">S</button>
+          </div>
+
+          <div id="draft-editor" contenteditable="true" data-placeholder="Développe cette idée en 250 mots maximum…" oninput="onDraftInput()" onkeyup="checkSelection()" onmouseup="checkSelection()" ontouchend="checkSelection()"></div>
           <div class="word-bar">
             <span class="word-count" id="word-count">0 / 250</span>
             <div class="meter-track"><div class="meter-fill" id="meter-fill"></div></div>
+            <span class="timer-display" id="timer-display">0:00</span>
           </div>
           <div class="editor-tabs">
             <button class="etab active" onclick="switchTab('links')">↔ Liens</button>
@@ -441,7 +476,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
           <div class="idea-title" id="edit-title"></div>
         </div>
         <div class="read-scroll">
-          <textarea id="edit-draft" placeholder="Modifie ce fragment…" oninput="onEditInput()" rows="8"></textarea>
+          <div id="edit-draft" contenteditable="true" data-placeholder="Modifie ce fragment…" oninput="onEditInput()" style="width:100%;min-height:200px;background:var(--white);border:1.5px solid var(--sauge);border-radius:12px;padding:16px;font-family:Georgia,serif;font-size:16px;color:var(--ink-mid);line-height:1.85;outline:none;white-space:pre-wrap;word-wrap:break-word;"></div>
           <div class="word-bar">
             <span class="word-count" id="edit-wc">0 / 250</span>
             <div class="meter-track"><div class="meter-fill" id="edit-meter"></div></div>
@@ -551,7 +586,8 @@ const db = {
   delete: (t, filter) => db.req('DELETE', t, { filter }),
 };
 
-// ===== STATE =====
+// ===== HELPERS =====
+const $ = id => document.getElementById(id);
 let ideas = [], fragments = {}, links = {}, refs = {};
 let currentId = null, readId = null, editId = null;
 let currentTab = 'links', currentRefType = { emoji: '📖', label: 'Livre' };
@@ -559,9 +595,89 @@ let ideasFilter = 'all', ideasSearch = '';
 let streak = 0, bestStreak = 0, activityDays = {};
 let prevView = 'write';
 
-// ===== HELPERS =====
-const $ = id => document.getElementById(id);
-function cw(t) { return t && t.trim() ? t.trim().split(/\s+/).length : 0; }
+// ===== DRAFT HELPERS (contenteditable) =====
+function getDraftText() {
+  const el = $('draft-editor');
+  return el ? el.innerText || '' : '';
+}
+function setDraftHTML(html) {
+  const el = $('draft-editor');
+  if (!el) return;
+  el.innerHTML = html || '';
+}
+function getDraftHTML() {
+  const el = $('draft-editor');
+  return el ? el.innerHTML || '' : '';
+}
+
+// ===== FORMAT BUBBLE =====
+function applyFmt(cmd) {
+  document.execCommand(cmd, false, null);
+  $('draft-editor').focus();
+  onDraftInput();
+}
+function checkSelection() {
+  const sel = window.getSelection();
+  const bubble = $('format-bubble');
+  if (!sel || sel.isCollapsed || !sel.toString().trim()) {
+    bubble.classList.remove('show');
+    return;
+  }
+  // Check selection is inside draft-editor
+  const editor = $('draft-editor');
+  if (!editor || !editor.contains(sel.anchorNode)) {
+    bubble.classList.remove('show');
+    return;
+  }
+  const range = sel.getRangeAt(0);
+  const rect = range.getBoundingClientRect();
+  bubble.classList.add('show');
+  bubble.style.top = (rect.top + window.scrollY - 48) + 'px';
+  bubble.style.left = (rect.left + rect.width / 2) + 'px';
+}
+document.addEventListener('selectionchange', () => {
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed) {
+    const bubble = $('format-bubble');
+    if (bubble) bubble.classList.remove('show');
+  }
+});
+
+// ===== TIMER =====
+let timerInterval = null, timerSeconds = 0, timerStarted = false;
+
+function startTimer() {
+  if (timerStarted) return;
+  timerStarted = true;
+  timerSeconds = 0;
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    timerSeconds++;
+    const m = Math.floor(timerSeconds / 60);
+    const s = timerSeconds % 60;
+    const el = $('timer-display');
+    if (el) { el.textContent = `${m}:${s.toString().padStart(2,'0')}`;  el.classList.add('running'); }
+  }, 1000);
+}
+function stopTimer() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  const el = $('timer-display');
+  if (el) el.classList.remove('running');
+}
+function resetTimer() {
+  stopTimer();
+  timerSeconds = 0;
+  timerStarted = false;
+  const el = $('timer-display');
+  if (el) { el.textContent = '0:00'; el.classList.remove('running'); }
+}
+function cw(t) {
+  if (!t) return 0;
+  // Strip HTML tags for word count
+  const clean = t.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim();
+  return clean ? clean.split(/\s+/).filter(w => w.length > 0).length : 0;
+}
 function today() { return new Date().toISOString().split('T')[0]; }
 function fmt(n) { return n >= 1000 ? (n/1000).toFixed(1)+'k' : n; }
 function notify(msg) {
@@ -643,10 +759,11 @@ async function openIdea(id) {
 
   $('idea-tag').textContent = `Idée n° ${idx + 1} · ${rem} restante${rem > 1 ? 's' : ''}`;
   $('idea-title').textContent = idea.title;
-  $('draft').value = frag?.text || '';
-  $('draft').classList.remove('over');
+  setDraftHTML(frag?.text || '');
+  $('draft-editor').classList.remove('over');
   $('btn-save').textContent = 'Sauvegarder';
   $('btn-save').classList.remove('saved');
+  resetTimer();
   switchTab('links');
   $('link-search').value = '';
   renderLinkedChips();
@@ -655,28 +772,29 @@ async function openIdea(id) {
   updateWordBar();
   $('write-empty').style.display = 'none';
   $('editor').style.display = 'flex';
-  setTimeout(() => $('draft').focus(), 100);
+  setTimeout(() => $('draft-editor').focus(), 100);
 }
 
 function onDraftInput() {
+  startTimer();
   $('btn-save').textContent = 'Sauvegarder';
   $('btn-save').classList.remove('saved');
   updateWordBar();
 }
 
 function updateWordBar() {
-  const w = cw($('draft').value);
+  const w = cw(getDraftHTML());
   const pct = Math.min(w / 250 * 100, 100);
   $('word-count').textContent = `${w} / 250`;
   $('word-count').style.color = w > 250 ? 'var(--terracotta)' : w > 200 ? '#C4A050' : 'var(--ink-dim)';
   $('meter-fill').style.width = pct + '%';
   $('meter-fill').style.background = w > 250 ? 'var(--terracotta)' : w > 200 ? '#C4A050' : 'var(--sauge)';
-  $('draft').classList.toggle('over', w > 250);
+  $('draft-editor').classList.toggle('over', w > 250);
 }
 
 async function saveDraft() {
   if (!currentId) return;
-  const text = $('draft').value;
+  const text = getDraftHTML();
   try {
     if (fragments[currentId]) {
       await db.patch('fragments', `idea_id=eq.${currentId}`, { text });
@@ -694,7 +812,9 @@ async function saveDraft() {
 
 async function validateFragment() {
   if (!currentId) return;
-  const text = $('draft').value;
+  const text = getDraftHTML();
+  const writingTime = timerSeconds;
+  stopTimer();
   try {
     const now = new Date().toISOString();
     if (fragments[currentId]) {
@@ -708,8 +828,10 @@ async function validateFragment() {
     ideas = ideas.map(i => i.id === currentId ? { ...i, done: true } : i);
     await recordActivity();
     computeStreak(); updateTopStreak();
-    notify('Fragment validé ✓');
+    const m = Math.floor(writingTime / 60), s = writingTime % 60;
+    notify(`Fragment validé ✓ — rédigé en ${m}:${s.toString().padStart(2,'0')}`);
     currentId = null;
+    resetTimer();
     $('editor').style.display = 'none';
     $('write-empty').style.display = '';
     updateEmptyState();
@@ -854,7 +976,7 @@ function ideaRowHTML(idea) {
   const w = frag?.text ? cw(frag.text) : 0;
   const lcount = (links[idea.id] || []).length;
   const rcount = (refs[idea.id] || []).length;
-  return `<div class="idea-row ${idea.done ? 'done' : ''} fade-up">
+  return `<div class="idea-row ${idea.done ? 'done' : ''} fade-up" onclick="openReadOrWrite('${idea.id}')">
     <span class="idea-bullet ${idea.done ? 'done' : ''}">${idea.done ? '✓' : '◦'}</span>
     <div class="idea-row-body">
       <div class="idea-row-title">${idea.title}</div>
@@ -865,8 +987,7 @@ function ideaRowHTML(idea) {
         ${!idea.done && frag?.text ? '<span class="meta-tag">brouillon</span>' : ''}
       </div>
     </div>
-    <div style="display:flex;gap:5px;flex-shrink:0">
-      <button class="idea-row-btn" onclick="openReadOrWrite('${idea.id}')">${idea.done ? 'Relire' : 'Écrire'}</button>
+    <div style="display:flex;gap:5px;flex-shrink:0" onclick="event.stopPropagation()">
       <button class="idea-row-del" onclick="confirmDelete('${idea.id}')">🗑</button>
     </div>
   </div>`;
@@ -886,7 +1007,7 @@ function openReadView(id) {
   const idx = ideas.findIndex(i => i.id === id);
   $('read-tag').textContent = `Fragment traité · n° ${idx + 1}`;
   $('read-title').textContent = idea.title;
-  $('read-text').textContent = frag?.text || '';
+  $('read-text').innerHTML = frag?.text || '';
   const w = cw(frag?.text || '');
   $('read-wc').textContent = `${w} / 250 mots`;
   $('read-meter').style.width = Math.min(w/250*100,100) + '%';
@@ -919,7 +1040,7 @@ function openEditMode() {
   const idx = ideas.findIndex(i => i.id === editId);
   $('edit-tag').textContent = `Modification · n° ${idx + 1}`;
   $('edit-title').textContent = idea.title;
-  $('edit-draft').value = frag?.text || '';
+  $('edit-draft').innerHTML = frag?.text || '';
   onEditInput();
   switchEditTab('links');
   renderEditLinks();
@@ -931,7 +1052,7 @@ function openEditMode() {
 }
 
 function onEditInput() {
-  const w = cw($('edit-draft').value);
+  const w = cw($('edit-draft').innerHTML || '');
   $('edit-wc').textContent = `${w} / 250`;
   $('edit-wc').style.color = w > 250 ? 'var(--terracotta)' : 'var(--ink-dim)';
   $('edit-meter').style.width = Math.min(w/250*100,100) + '%';
@@ -981,7 +1102,7 @@ async function addEditLink(targetId) {
 }
 
 async function saveEdit() {
-  const text = $('edit-draft').value;
+  const text = $('edit-draft').innerHTML || '';
   try {
     if (fragments[editId]) {
       await db.patch('fragments', `idea_id=eq.${editId}`, { text });
@@ -1154,6 +1275,14 @@ async function executeDelete() {
 }
 
 // ===== PDF EXPORT =====
+function htmlToPlainLines(html, maxW, doc) {
+  // Convert HTML to styled segments for PDF
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  const plainText = div.innerText || div.textContent || '';
+  return doc.splitTextToSize(plainText, maxW);
+}
+
 function exportPDF() {
   const idea = ideas.find(i => i.id === readId);
   const frag = fragments[readId];
@@ -1163,7 +1292,7 @@ function exportPDF() {
   const margin = 25, pageW = 210, maxW = pageW - margin * 2;
   let y = 30;
 
-  // Header
+  // Header band
   doc.setFillColor(74, 124, 89);
   doc.rect(0, 0, 210, 14, 'F');
   doc.setTextColor(240, 247, 242);
@@ -1172,10 +1301,10 @@ function exportPDF() {
   doc.text('Shrapnel Notes', margin, 9);
   doc.text(new Date().toLocaleDateString('fr-FR'), 210 - margin, 9, { align: 'right' });
 
-  // Title
+  // Title in italic
   doc.setTextColor(28, 28, 28);
   doc.setFontSize(20);
-  doc.setFont('helvetica', 'bolditalic');
+  doc.setFont('times', 'bolditalic');
   const titleLines = doc.splitTextToSize(idea.title, maxW);
   doc.text(titleLines, margin, y);
   y += titleLines.length * 9 + 6;
@@ -1186,21 +1315,51 @@ function exportPDF() {
   doc.line(margin, y, 210 - margin, y);
   y += 10;
 
-  // Body text
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
+  // Body text — Times Roman (closest to Georgia in jsPDF)
+  doc.setFont('times', 'normal');
+  doc.setFontSize(12);
   doc.setTextColor(74, 66, 56);
-  const bodyLines = doc.splitTextToSize(frag.text, maxW);
-  bodyLines.forEach(line => {
-    if (y > 270) { doc.addPage(); y = 25; }
-    doc.text(line, margin, y);
-    y += 6.5;
-  });
-  y += 8;
 
+  // Parse HTML to preserve bold/italic/underline
+  const div = document.createElement('div');
+  div.innerHTML = frag.text;
+  const paragraphs = div.innerHTML.split(/<\/p>|<br\s*\/?>/i).filter(p => p.trim());
+
+  paragraphs.forEach(para => {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = para;
+    // Walk nodes for basic bold/italic
+    const nodes = tmp.childNodes;
+    nodes.forEach(node => {
+      if (y > 270) { doc.addPage(); y = 25; }
+      let txt = node.textContent || '';
+      if (!txt.trim()) return;
+      const tag = node.nodeName.toLowerCase();
+      if (tag === 'strong' || tag === 'b') {
+        doc.setFont('times', 'bold');
+      } else if (tag === 'em' || tag === 'i') {
+        doc.setFont('times', 'italic');
+      } else if (tag === 'u') {
+        doc.setFont('times', 'normal');
+      } else {
+        doc.setFont('times', 'normal');
+      }
+      const lines = doc.splitTextToSize(txt, maxW);
+      lines.forEach(line => {
+        if (y > 270) { doc.addPage(); y = 25; }
+        doc.text(line, margin, y);
+        y += 7;
+      });
+    });
+    y += 3; // paragraph spacing
+    doc.setFont('times', 'normal');
+  });
+
+  y += 5;
   // Word count
   doc.setFontSize(8);
   doc.setTextColor(155, 142, 126);
+  doc.setFont('helvetica', 'normal');
   doc.text(`${cw(frag.text)} mots`, margin, y);
   y += 12;
 
@@ -1232,15 +1391,15 @@ function exportPDF() {
     doc.setFont('helvetica', 'bold');
     doc.text('RÉFÉRENCES', margin, y);
     y += 7;
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(74, 66, 56);
     refList.forEach(r => {
       if (y > 275) { doc.addPage(); y = 25; }
       doc.setFontSize(8);
       doc.setTextColor(155, 142, 126);
+      doc.setFont('helvetica', 'normal');
       doc.text(r.type.toUpperCase(), margin, y);
       doc.setTextColor(74, 66, 56);
       doc.setFontSize(10);
+      doc.setFont('times', 'normal');
       const rlines = doc.splitTextToSize(r.text, maxW - 5);
       doc.text(rlines, margin + 2, y + 5);
       y += rlines.length * 5.5 + 8;
@@ -1248,6 +1407,7 @@ function exportPDF() {
   }
 
   // Footer
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(200, 196, 190);
   doc.text('shrapnelnotes.com', 210 / 2, 290, { align: 'center' });
