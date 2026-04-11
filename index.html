@@ -312,6 +312,43 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 </head>
 <body>
 
+<!-- Auth screen -->
+<div id="auth-screen" style="display:none;position:fixed;inset:0;background:#4A7C59;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:32px;">
+    <svg width="56" height="56" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+      <rect width="64" height="64" rx="14" fill="#3A6B48"/>
+      <polygon points="32,8 44,14 52,26 48,36 38,44 28,50 16,44 12,30 18,18 28,12" fill="none" stroke="#F0F7F2" stroke-width="1.5"/>
+      <polyline points="32,8 36,20 30,28 34,38 28,50" fill="none" stroke="#E07A50" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="30" cy="28" r="2.5" fill="#E07A50"/>
+    </svg>
+    <div style="font-family:'DM Sans',sans-serif;font-size:22px;font-weight:500;color:#F0F7F2;">Shrapnel Notes</div>
+    <div style="font-size:13px;color:rgba(240,247,242,0.6);font-family:'DM Sans',sans-serif;">Ton atelier d'écriture</div>
+  </div>
+
+  <div style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:16px;padding:24px;width:100%;max-width:360px;">
+    <div id="auth-tabs" style="display:flex;gap:4px;margin-bottom:20px;background:rgba(0,0,0,0.15);border-radius:10px;padding:3px;">
+      <button onclick="showAuthTab('login')" id="tab-login" style="flex:1;padding:8px;border-radius:8px;font-size:13px;font-weight:500;color:#F0F7F2;background:rgba(255,255,255,0.15);font-family:'DM Sans',sans-serif;">Connexion</button>
+      <button onclick="showAuthTab('signup')" id="tab-signup" style="flex:1;padding:8px;border-radius:8px;font-size:13px;color:rgba(240,247,242,0.6);background:transparent;font-family:'DM Sans',sans-serif;">Inscription</button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div>
+        <div style="font-size:10px;color:rgba(240,247,242,0.6);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px;font-family:'DM Sans',sans-serif;">Email</div>
+        <input id="auth-email" type="email" placeholder="ton@email.com" onkeydown="if(event.key==='Enter')$('auth-password').focus()" style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:#F0F7F2;font-size:14px;outline:none;font-family:'DM Sans',sans-serif;" autocomplete="email"/>
+      </div>
+      <div>
+        <div style="font-size:10px;color:rgba(240,247,242,0.6);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px;font-family:'DM Sans',sans-serif;">Mot de passe</div>
+        <input id="auth-password" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')handleAuth()" style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:#F0F7F2;font-size:14px;outline:none;font-family:'DM Sans',sans-serif;" autocomplete="current-password"/>
+      </div>
+      <div id="auth-error" style="display:none;font-size:12px;color:#FFCBA4;font-family:'DM Sans',sans-serif;padding:4px 0;"></div>
+      <button onclick="handleAuth()" id="auth-btn" style="width:100%;padding:13px;background:#E07A50;color:#FFF;border-radius:10px;font-size:14px;font-weight:500;margin-top:4px;font-family:'DM Sans',sans-serif;transition:opacity 0.15s;">Se connecter</button>
+      <div id="auth-forgot" style="text-align:center;">
+        <button onclick="handleForgot()" style="font-size:12px;color:rgba(240,247,242,0.5);font-family:'DM Sans',sans-serif;background:none;border:none;cursor:pointer;">Mot de passe oublié ?</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Loading screen -->
 <div id="loading">
   <div class="loading-logo">
@@ -342,7 +379,10 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
       </svg>
       <span class="brand-name">Shrapnel Notes</span>
     </div>
-    <div class="streak-pill" id="top-streak"></div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="streak-pill" id="top-streak"></div>
+      <button onclick="handleLogout()" style="font-size:11px;color:rgba(240,247,242,0.5);background:none;border:none;cursor:pointer;padding:2px;" title="Se déconnecter">⎋</button>
+    </div>
   </div>
 
   <!-- Main -->
@@ -668,6 +708,192 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 const SUPABASE_URL = 'https://dxvitpklayuioxtpygvz.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4dml0cGtsYXl1aW94dHB5Z3Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NDYxMDcsImV4cCI6MjA5MTIyMjEwN30.-zxDu_NIr4B4TPzOgZRki2Pm-qOkI1ovf7qbq-1s2qc';
 
+// ===== AUTH STATE =====
+let currentUser = null;
+let authToken = SUPABASE_KEY; // falls back to anon key
+
+function getAuthHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${authToken}`,
+    'Prefer': 'return=representation'
+  };
+}
+
+// ===== AUTH FUNCTIONS =====
+let currentAuthTab = 'login';
+
+function showAuthTab(tab) {
+  currentAuthTab = tab;
+  const loginBtn = $('tab-login'), signupBtn = $('tab-signup');
+  const authBtn = $('auth-btn'), forgotDiv = $('auth-forgot');
+  if (tab === 'login') {
+    loginBtn.style.background = 'rgba(255,255,255,0.15)';
+    loginBtn.style.color = '#F0F7F2';
+    signupBtn.style.background = 'transparent';
+    signupBtn.style.color = 'rgba(240,247,242,0.6)';
+    authBtn.textContent = 'Se connecter';
+    if (forgotDiv) forgotDiv.style.display = 'block';
+  } else {
+    signupBtn.style.background = 'rgba(255,255,255,0.15)';
+    signupBtn.style.color = '#F0F7F2';
+    loginBtn.style.background = 'transparent';
+    loginBtn.style.color = 'rgba(240,247,242,0.6)';
+    authBtn.textContent = 'Créer mon compte';
+    if (forgotDiv) forgotDiv.style.display = 'none';
+  }
+  hideAuthError();
+}
+
+function showAuthError(msg) {
+  const el = $('auth-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function hideAuthError() {
+  const el = $('auth-error');
+  if (el) el.style.display = 'none';
+}
+
+async function handleAuth() {
+  const email = $('auth-email').value.trim();
+  const password = $('auth-password').value;
+  if (!email || !password) { showAuthError('Email et mot de passe requis.'); return; }
+  const btn = $('auth-btn');
+  btn.style.opacity = '0.6';
+  btn.textContent = '...';
+  hideAuthError();
+
+  const endpoint = currentAuthTab === 'login'
+    ? `${SUPABASE_URL}/auth/v1/token?grant_type=password`
+    : `${SUPABASE_URL}/auth/v1/signup`;
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      const msg = data.error_description || data.msg || 'Erreur de connexion.';
+      showAuthError(msg === 'Invalid login credentials' ? 'Email ou mot de passe incorrect.' : msg);
+      btn.style.opacity = '1';
+      btn.textContent = currentAuthTab === 'login' ? 'Se connecter' : 'Créer mon compte';
+      return;
+    }
+
+    if (currentAuthTab === 'signup' && !data.access_token) {
+      showAuthError('');
+      $('auth-error').style.display = 'block';
+      $('auth-error').style.color = '#A8CBB0';
+      $('auth-error').textContent = 'Compte créé ! Vérifie ton email pour confirmer.';
+      btn.style.opacity = '1';
+      btn.textContent = 'Créer mon compte';
+      return;
+    }
+
+    // Logged in
+    currentUser = data.user;
+    authToken = data.access_token;
+    localStorage.setItem('sn_token', data.access_token);
+    localStorage.setItem('sn_refresh', data.refresh_token);
+    localStorage.setItem('sn_user', JSON.stringify(data.user));
+
+    $('auth-screen').style.display = 'none';
+    await loadAll();
+  } catch(e) {
+    showAuthError('Erreur réseau. Réessaie.');
+    btn.style.opacity = '1';
+    btn.textContent = currentAuthTab === 'login' ? 'Se connecter' : 'Créer mon compte';
+  }
+}
+
+async function handleForgot() {
+  const email = $('auth-email').value.trim();
+  if (!email) { showAuthError('Entre ton email d\'abord.'); return; }
+  try {
+    await fetch(`${SUPABASE_URL}/auth/v1/recover`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({ email })
+    });
+    $('auth-error').style.display = 'block';
+    $('auth-error').style.color = '#A8CBB0';
+    $('auth-error').textContent = 'Email de réinitialisation envoyé !';
+  } catch(e) { showAuthError('Erreur réseau.'); }
+}
+
+async function handleLogout() {
+  try {
+    await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${authToken}` }
+    });
+  } catch(e) {}
+  currentUser = null;
+  authToken = SUPABASE_KEY;
+  localStorage.removeItem('sn_token');
+  localStorage.removeItem('sn_refresh');
+  localStorage.removeItem('sn_user');
+  // Reset state
+  ideas = []; fragments = {}; links = {}; refs = {};
+  researchNotes = []; aiAnalyses = {};
+  $('auth-screen').style.display = 'flex';
+}
+
+async function refreshToken() {
+  const refresh = localStorage.getItem('sn_refresh');
+  if (!refresh) return false;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({ refresh_token: refresh })
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    authToken = data.access_token;
+    localStorage.setItem('sn_token', data.access_token);
+    localStorage.setItem('sn_refresh', data.refresh_token);
+    currentUser = data.user;
+    return true;
+  } catch(e) { return false; }
+}
+
+async function checkAuth() {
+  // Check stored session
+  const token = localStorage.getItem('sn_token');
+  const user = localStorage.getItem('sn_user');
+  if (token && user) {
+    authToken = token;
+    currentUser = JSON.parse(user);
+    // Verify token is still valid
+    try {
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        $('auth-screen').style.display = 'none';
+        return true;
+      }
+      // Try refresh
+      const refreshed = await refreshToken();
+      if (refreshed) {
+        $('auth-screen').style.display = 'none';
+        return true;
+      }
+    } catch(e) {}
+  }
+  // Show auth screen
+  $('loading').classList.add('hidden');
+  $('auth-screen').style.display = 'flex';
+  return false;
+}
+
 // ===== SUPABASE CLIENT =====
 const db = {
   async req(method, table, opts = {}) {
@@ -677,7 +903,7 @@ const db = {
     if (opts.filter) params.push(opts.filter);
     if (opts.order) params.push(`order=${opts.order}`);
     if (params.length) url += '?' + params.join('&');
-    const headers = { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Prefer': 'return=representation' };
+    const headers = getAuthHeaders();
     const res = await fetch(url, { method, headers, body: opts.body ? JSON.stringify(opts.body) : undefined });
     if (!res.ok) { const e = await res.text(); throw new Error(e); }
     const text = await res.text();
@@ -691,6 +917,7 @@ const db = {
 
 // ===== HELPERS =====
 const $ = id => document.getElementById(id);
+function uid() { return currentUser?.id || null; }
 let ideas = [], fragments = {}, links = {}, refs = {};
 let researchNotes = [], aiAnalyses = {};
 let currentId = null, readId = null, editId = null;
@@ -874,7 +1101,7 @@ async function resetAndPick() {
         await db.patch('fragments', `idea_id=eq.${currentId}`, { text });
         fragments[currentId].text = text;
       } else {
-        const res = await db.post('fragments', { idea_id: currentId, text });
+        const res = await db.post('fragments', { idea_id: currentId, text, user_id: uid() });
         fragments[currentId] = res[0];
       }
     } catch(e) {}
@@ -934,7 +1161,7 @@ async function saveDraft() {
       await db.patch('fragments', `idea_id=eq.${currentId}`, { text });
       fragments[currentId].text = text;
     } else {
-      const res = await db.post('fragments', { idea_id: currentId, text });
+      const res = await db.post('fragments', { idea_id: currentId, text, user_id: uid() });
       fragments[currentId] = res[0];
     }
     await recordActivity();
@@ -957,7 +1184,7 @@ async function validateFragment() {
       fragments[currentId].validated_at = now;
       fragments[currentId].writing_time = writingTime;
     } else {
-      const res = await db.post('fragments', { idea_id: currentId, text, validated_at: now, writing_time: writingTime });
+      const res = await db.post('fragments', { idea_id: currentId, text, validated_at: now, writing_time: writingTime, user_id: uid() });
       fragments[currentId] = res[0];
     }
     await db.patch('ideas', `id=eq.${currentId}`, { done: true });
@@ -1007,7 +1234,7 @@ function renderLinkResults(q) {
 async function addLink(targetId) {
   if (!currentId) return;
   try {
-    await db.post('fragment_links', { from_idea_id: currentId, to_idea_id: targetId });
+    await db.post('fragment_links', { from_idea_id: currentId, to_idea_id: targetId, user_id: uid() });
     if (!links[currentId]) links[currentId] = [];
     if (!links[targetId]) links[targetId] = [];
     links[currentId].push(targetId);
@@ -1042,7 +1269,7 @@ async function addRef() {
   const val = $('ref-input').value.trim();
   if (!val) return;
   try {
-    const res = await db.post('biblio_refs', { idea_id: currentId, type: currentRefType.label, emoji: currentRefType.emoji, text: val });
+    const res = await db.post('biblio_refs', { idea_id: currentId, type: currentRefType.label, emoji: currentRefType.emoji, text: val, user_id: uid() });
     if (!refs[currentId]) refs[currentId] = [];
     refs[currentId].push(res[0]);
     $('ref-input').value = '';
@@ -1283,7 +1510,7 @@ function searchEditLinks(q) {
 
 async function addEditLink(targetId) {
   try {
-    await db.post('fragment_links', { from_idea_id: editId, to_idea_id: targetId });
+    await db.post('fragment_links', { from_idea_id: editId, to_idea_id: targetId, user_id: uid() });
     if (!links[editId]) links[editId] = [];
     if (!links[targetId]) links[targetId] = [];
     links[editId].push(targetId);
@@ -1302,7 +1529,7 @@ async function saveEdit() {
       await db.patch('fragments', `idea_id=eq.${editId}`, { text });
       fragments[editId].text = text;
     } else {
-      const res = await db.post('fragments', { idea_id: editId, text });
+      const res = await db.post('fragments', { idea_id: editId, text, user_id: uid() });
       fragments[editId] = res[0];
     }
     notify('Fragment mis à jour ✓');
@@ -1343,7 +1570,7 @@ async function addIdeas() {
   if (!lines.length) return;
   try {
     const rows = lines.map((title, i) => ({ title, done: false, position: ideas.length + i }));
-    const res = await db.post('ideas', rows);
+    const res = await db.post('ideas', rows.map(r => ({...r, user_id: uid()})));
     ideas.push(...(res || []));
     hideAddPanel();
     updateEmptyState();
@@ -1360,7 +1587,7 @@ async function recordActivity() {
       await db.patch('activity', `day=eq.${d}`, { count: activityDays[d] + 1 });
       activityDays[d]++;
     } else {
-      await db.post('activity', { day: d, count: 1 });
+      await db.post('activity', { day: d, count: 1, user_id: uid() });
       activityDays[d] = 1;
     }
   } catch(e) {}
@@ -1651,7 +1878,7 @@ async function addEditRef() {
   const val = $('edit-ref-input').value.trim();
   if (!val || !editId) return;
   try {
-    const res = await db.post('biblio_refs', { idea_id: editId, type: currentEditRefType.label, emoji: currentEditRefType.emoji, text: val });
+    const res = await db.post('biblio_refs', { idea_id: editId, type: currentEditRefType.label, emoji: currentEditRefType.emoji, text: val, user_id: uid() });
     if (!refs[editId]) refs[editId] = [];
     refs[editId].push(res[0]);
     $('edit-ref-input').value = '';
@@ -1819,7 +2046,7 @@ Réponds en français. Sois direct et précis. Parle à l'auteur comme un lecteu
     const data = await response.json();
     const content = data.content[0].text;
 
-    const res = await db.post('ai_analyses', { idea_id: readId, content });
+    const res = await db.post('ai_analyses', { idea_id: readId, content, user_id: uid() });
     if (!aiAnalyses[readId]) aiAnalyses[readId] = [];
     aiAnalyses[readId].unshift(res[0]);
 
@@ -1856,7 +2083,8 @@ async function convertToResearchNote(analysisId) {
       source: `Fragment : "${idea.title}" · ${dateStr}`,
       content: analysis.content,
       source_type: 'Analyse IA',
-      source_emoji: '✦'
+      source_emoji: '✦',
+      user_id: uid()
     });
     researchNotes.unshift(res[0]);
     notify('Ajouté à la bibliothèque ✓');
@@ -1909,7 +2137,7 @@ async function saveResearchNote() {
       if (idx !== -1) researchNotes[idx] = { ...researchNotes[idx], title, source, content, source_type: currentRnType.label, source_emoji: currentRnType.emoji };
       notify('Note mise à jour ✓');
     } else {
-      const res = await db.post('research_notes', { title, source, content, source_type: currentRnType.label, source_emoji: currentRnType.emoji });
+      const res = await db.post('research_notes', { title, source, content, source_type: currentRnType.label, source_emoji: currentRnType.emoji, user_id: uid() });
       researchNotes.unshift(res[0]);
       notify('Note enregistrée ✓');
     }
@@ -2108,7 +2336,11 @@ if ('serviceWorker' in navigator) {
 }
 
 // ===== INIT =====
-loadAll();
+async function init() {
+  const authed = await checkAuth();
+  if (authed) await loadAll();
+}
+init();
 </script>
 </body>
 </html>

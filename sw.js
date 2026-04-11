@@ -1,4 +1,4 @@
-const CACHE = 'shrapnel-v8c';
+const CACHE = 'shrapnel-v9';
 const ASSETS = ['/', '/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', e => {
