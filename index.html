@@ -536,9 +536,15 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
         <div id="ai-panel" style="display:none;border-top:1px solid var(--sable-mid);background:var(--sable);padding:16px 18px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
             <div style="font-size:10px;color:var(--ink-dim);letter-spacing:0.1em;text-transform:uppercase;">Analyse IA</div>
-            <button onclick="closeAIPanel()" style="font-size:18px;color:var(--ink-dim);padding:0 4px;">×</button>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <button id="btn-new-analyse" onclick="analyseFragment(true)" style="padding:5px 12px;background:var(--sauge);color:#fff;border-radius:20px;font-size:11px;font-weight:500;">+ Nouvelle</button>
+              <button onclick="closeAIPanel()" style="font-size:18px;color:var(--ink-dim);padding:0 4px;">×</button>
+            </div>
           </div>
-          <div id="ai-result" style="font-family:Georgia,serif;font-size:14px;color:var(--ink-mid);line-height:1.8;"></div>
+          <div id="ai-history-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+          <div id="ai-loading" style="display:none;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink-dim);padding:12px 0;">
+            <span style="animation:pulse 1.5s ease infinite;">✦</span> Analyse en cours…
+          </div>
         </div>
       </div>
     </div>
@@ -1174,8 +1180,10 @@ function openReadView(id) {
   $('read-wc').textContent = `${w} / 250 mots`;
   $('read-meter').style.width = Math.min(w/250*100,100) + '%';
 
-  // Close AI panel
+  // Reset AI panel
   closeAIPanel();
+  if ($('ai-history-list')) $('ai-history-list').innerHTML = '';
+  if ($('ai-loading')) $('ai-loading').style.display = 'none';
 
   // Show analyse button only if research notes exist
   const btnAnalyse = $('btn-analyse');
@@ -1195,7 +1203,7 @@ function openReadView(id) {
     metaTags.push(`<span class="read-meta-tag green">⏱ ${m}:${s.toString().padStart(2,'0')} de rédaction</span>`);
   }
   // Keep the analyse button last
-  meta.innerHTML = metaTags.join('') + (researchNotes.length > 0 ? `<button id="btn-analyse" onclick="analyseFragment()" style="margin-left:auto;padding:6px 14px;background:var(--sauge);color:#fff;border-radius:20px;font-size:11px;font-weight:500;">✦ Analyser avec l'IA</button>` : '');
+  meta.innerHTML = metaTags.join('') + (researchNotes.length > 0 ? `<button onclick="openAIPanel()" style="margin-left:auto;padding:6px 14px;background:var(--sauge);color:#fff;border-radius:20px;font-size:11px;font-weight:500;">✦ Analyse IA</button>` : '');
 
   // Links
   const linked = (links[id] || []);
@@ -1673,12 +1681,193 @@ function renderEditRefs() {
 }
 
 // ===== IA DE RELECTURE =====
+let aiAnalyses = {}; // idea_id -> [analyses]
+
+async function loadAIAnalyses(ideaId) {
+  try {
+    const data = await db.get('ai_analyses', {
+      select: '*',
+      filter: `idea_id=eq.${ideaId}`,
+      order: 'created_at.desc'
+    });
+    aiAnalyses[ideaId] = data || [];
+  } catch(e) { aiAnalyses[ideaId] = []; }
+}
+
 function closeAIPanel() {
   const panel = $('ai-panel');
   if (panel) panel.style.display = 'none';
 }
 
-async function analyseFragment() {
+async function openAIPanel() {
+  const panel = $('ai-panel');
+  panel.style.display = 'block';
+  if (!aiAnalyses[readId]) await loadAIAnalyses(readId);
+  renderAIHistory();
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderAIHistory() {
+  const list = $('ai-history-list');
+  const analyses = aiAnalyses[readId] || [];
+
+  if (!analyses.length) {
+    list.innerHTML = `<div style="font-size:13px;color:var(--ink-dim);font-family:'DM Sans',sans-serif;padding:8px 0;">
+      Aucune analyse pour ce fragment. Lance une première analyse.
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = analyses.map((a, i) => {
+    const d = new Date(a.created_at);
+    const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+    const timeStr = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const isLatest = i === 0;
+    const formatted = a.content
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/^(\d+\.\s)/gm, '<br><strong>$1</strong>')
+      .replace(/\n\n/g, '<br><br>')
+      .replace(/\n/g, '<br>');
+
+    const preview = a.content.slice(0, 100).replace(/\*\*/g, '') + '…';
+
+    return `<div style="background:var(--white);border:1px solid ${isLatest ? 'rgba(74,124,89,0.4)' : 'var(--sable-mid)'};border-radius:12px;overflow:hidden;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;cursor:pointer;" onclick="toggleAnalysis('ai-body-${a.id}','ai-chevron-${a.id}')">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:10px;padding:2px 8px;border-radius:20px;background:${isLatest ? 'rgba(74,124,89,0.1)' : 'var(--sable-mid)'};color:${isLatest ? 'var(--sauge)' : 'var(--ink-dim)'};">${isLatest ? 'Dernière' : 'Précédente'} · ${dateStr} ${timeStr}</span>
+        </div>
+        <span id="ai-chevron-${a.id}" style="color:var(--ink-dim);font-size:12px;">${isLatest ? '▲' : '▶'}</span>
+      </div>
+      <div id="ai-body-${a.id}" style="display:${isLatest ? 'block' : 'none'};padding:0 12px 12px;">
+        <div style="font-family:Georgia,serif;font-size:13px;color:var(--ink-mid);line-height:1.8;margin-bottom:10px;">${formatted}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button onclick="convertToResearchNote('${a.id}')" style="padding:6px 12px;background:rgba(74,124,89,0.08);border:1px solid rgba(74,124,89,0.3);border-radius:8px;font-size:11px;color:var(--sauge);">📚 Ajouter à la bibliothèque</button>
+          <button onclick="deleteAnalysis('${a.id}')" style="padding:6px 10px;border:1px solid rgba(180,50,50,0.2);border-radius:8px;font-size:11px;color:#c0392b;">🗑</button>
+        </div>
+      </div>
+      ${!isLatest ? `<div style="padding:0 12px 10px;font-family:Georgia,serif;font-size:11px;color:var(--ink-dim);">${preview}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function toggleAnalysis(bodyId, chevronId) {
+  const body = $(bodyId);
+  const chev = $(chevronId);
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (chev) chev.textContent = open ? '▶' : '▲';
+}
+
+async function analyseFragment(forceNew) {
+  const idea = ideas.find(i => i.id === readId);
+  const frag = fragments[readId];
+  if (!idea || !frag?.text) return;
+  if (!researchNotes.length) { notify('Ajoute des notes de recherche d\'abord'); return; }
+
+  // Open panel
+  const panel = $('ai-panel');
+  panel.style.display = 'block';
+  $('ai-loading').style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  const div = document.createElement('div');
+  div.innerHTML = frag.text;
+  const plainText = div.innerText || '';
+
+  const notesContext = researchNotes.map((n, i) =>
+    `Note ${i+1} — ${n.title} (${n.source_type} : ${n.source})\n${n.content}`
+  ).join('\n\n---\n\n');
+
+  const prompt = `Tu es un assistant littéraire qui aide un auteur francophone à enrichir ses textes.
+
+Voici le fragment que l'auteur vient de rédiger :
+
+TITRE : ${idea.title}
+
+TEXTE :
+${plainText}
+
+---
+
+Voici sa bibliothèque de notes de recherche :
+
+${notesContext}
+
+---
+
+Analyse ce fragment et propose des connexions pertinentes avec les notes de recherche. Structure ta réponse en trois parties :
+
+1. **Connexions directes** — quelles notes résonnent le plus avec ce fragment et pourquoi (2-3 max)
+2. **Citations ou idées à intégrer** — des extraits ou concepts des notes qui pourraient enrichir ce fragment
+3. **Angles non explorés** — ce que l'auteur n'a pas encore dit sur ce sujet
+
+Réponds en français. Sois direct et précis. Parle à l'auteur comme un lecteur intelligent qui a lu les mêmes livres.`;
+
+  try {
+    const response = await fetch('/api/analyse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-opus-4-5',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!response.ok) throw new Error(await response.text());
+    const data = await response.json();
+    const content = data.content[0].text;
+
+    // Save to Supabase
+    const res = await db.post('ai_analyses', { idea_id: readId, content });
+    if (!aiAnalyses[readId]) aiAnalyses[readId] = [];
+    aiAnalyses[readId].unshift(res[0]);
+
+    $('ai-loading').style.display = 'none';
+    renderAIHistory();
+    notify('Analyse sauvegardée ✓');
+  } catch(e) {
+    console.error(e);
+    $('ai-loading').style.display = 'none';
+    $('ai-history-list').innerHTML = `<div style="color:var(--terracotta);font-size:13px;font-family:'DM Sans',sans-serif;">Erreur lors de l'analyse. Vérifie ta connexion et réessaie.</div>`;
+  }
+}
+
+async function deleteAnalysis(analysisId) {
+  try {
+    await db.delete('ai_analyses', `id=eq.${analysisId}`);
+    aiAnalyses[readId] = (aiAnalyses[readId] || []).filter(a => a.id !== analysisId);
+    renderAIHistory();
+    notify('Analyse supprimée');
+  } catch(e) {}
+}
+
+async function convertToResearchNote(analysisId) {
+  const analysis = (aiAnalyses[readId] || []).find(a => a.id === analysisId);
+  const idea = ideas.find(i => i.id === readId);
+  if (!analysis || !idea) return;
+
+  const d = new Date(analysis.created_at);
+  const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  const title = `Analyse IA — ${idea.title}`;
+  const source = `Fragment : "${idea.title}" · ${dateStr}`;
+  const content = analysis.content;
+
+  try {
+    const res = await db.post('research_notes', {
+      title,
+      source,
+      content,
+      source_type: 'Analyse IA',
+      source_emoji: '✦'
+    });
+    researchNotes.unshift(res[0]);
+    notify('Ajouté à la bibliothèque ✓');
+  } catch(e) { notify('Erreur lors de la conversion'); }
+}
   const idea = ideas.find(i => i.id === readId);
   const frag = fragments[readId];
   if (!idea || !frag?.text) return;
