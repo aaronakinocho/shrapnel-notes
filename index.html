@@ -205,6 +205,8 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .read-header { padding: 16px 18px 14px; border-bottom: 1px solid var(--sable-mid); }
 .back-btn { font-size: 12px; color: var(--ink-dim); margin-bottom: 10px; display: flex; align-items: center; gap: 4px; }
 .read-scroll { flex: 1; overflow-y: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 16px; }
+.read-meta-tag { font-size: 10px; color: var(--ink-dim); background: var(--sable-mid); padding: 3px 8px; border-radius: 20px; font-family: 'DM Sans', sans-serif; }
+.read-meta-tag.green { color: var(--sauge); }
 .read-text-card { background: var(--white); border: 1px solid var(--sable-mid); border-radius: 12px; padding: 16px; }
 .read-text { font-family: Georgia, serif; font-size: 16px; color: var(--ink-mid); line-height: 1.85; }
 .read-footer { padding: 12px 18px; border-top: 1px solid var(--sable-mid); background: var(--sable); display: flex; gap: 8px; }
@@ -407,7 +409,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
         <div class="editor-footer">
           <button class="btn-save" id="btn-save" onclick="saveDraft()">Sauvegarder</button>
           <button class="btn-validate" onclick="validateFragment()">Valider →</button>
-          <button class="btn-skip" onclick="pickRandom()">↺</button>
+          <button class="btn-skip" title="Piocher une autre idée" onclick="resetAndPick()">↺ Autre</button>
         </div>
       </div>
     </div>
@@ -441,8 +443,10 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
           <div class="stats-grid">
             <div class="stat-card"><div class="stat-val" id="s-total">0</div><div class="stat-label">idées totales</div></div>
             <div class="stat-card"><div class="stat-val green" id="s-done">0</div><div class="stat-label">fragments rédigés</div><div class="stat-sub" id="s-pct">0%</div></div>
+            <div class="stat-card"><div class="stat-val terra" id="s-remaining">0</div><div class="stat-label">à traiter</div><div class="stat-sub" id="s-remaining-sub"></div></div>
             <div class="stat-card"><div class="stat-val terra" id="s-words">0</div><div class="stat-label">mots écrits</div><div class="stat-sub" id="s-pages">~0 pages</div></div>
             <div class="stat-card"><div class="stat-val" id="s-refs">0</div><div class="stat-label">références</div></div>
+            <div class="stat-card"><div class="stat-val" id="s-avgtime">—</div><div class="stat-label">temps moyen</div><div class="stat-sub">par fragment</div></div>
           </div>
         </div>
 
@@ -468,6 +472,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
           <button class="filter-chip" onclick="setFilter(this,'draft')">Brouillons</button>
           <button class="filter-chip" onclick="setFilter(this,'done')">Traités</button>
           <button class="filter-chip" onclick="setFilter(this,'linked')">Liés</button>
+          <button class="filter-chip" onclick="setFilter(this,'chrono')">Chronologique</button>
         </div>
         <div id="ideas-list"></div>
       </div>
@@ -488,6 +493,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
               <span class="word-count" id="read-wc" style="color:var(--ink-dim)"></span>
               <div class="meter-track"><div class="meter-fill" id="read-meter" style="background:var(--sauge)"></div></div>
             </div>
+            <div id="read-meta" style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;"></div>
           </div>
           <div id="read-links-section"></div>
           <div id="read-refs-section"></div>
@@ -735,7 +741,7 @@ async function loadAll() {
   try {
     const [ideasData, fragsData, linksData, refsData, actData] = await Promise.all([
       db.get('ideas', { select: '*', order: 'created_at.asc' }),
-      db.get('fragments', { select: '*' }),
+      db.get('fragments', { select: 'id,idea_id,text,validated_at,writing_time,created_at,updated_at' }),
       db.get('fragment_links', { select: '*' }),
       db.get('biblio_refs', { select: '*' }),
       db.get('activity', { select: '*', order: 'day.desc' }),
@@ -793,6 +799,25 @@ async function pickRandom() {
   if (!pool.length) return;
   const pick = pool[Math.floor(Math.random() * pool.length)];
   await openIdea(pick.id);
+}
+
+async function resetAndPick() {
+  // Save draft silently if there's content
+  if (currentId && getDraftHTML().trim()) {
+    try {
+      const text = getDraftHTML();
+      if (fragments[currentId]) {
+        await db.patch('fragments', `idea_id=eq.${currentId}`, { text });
+        fragments[currentId].text = text;
+      } else {
+        const res = await db.post('fragments', { idea_id: currentId, text });
+        fragments[currentId] = res[0];
+      }
+    } catch(e) {}
+  }
+  resetTimer();
+  currentId = null;
+  await pickRandom();
 }
 
 async function openIdea(id) {
@@ -863,10 +888,12 @@ async function validateFragment() {
   try {
     const now = new Date().toISOString();
     if (fragments[currentId]) {
-      await db.patch('fragments', `idea_id=eq.${currentId}`, { text, validated_at: now });
-      fragments[currentId].text = text; fragments[currentId].validated_at = now;
+      await db.patch('fragments', `idea_id=eq.${currentId}`, { text, validated_at: now, writing_time: writingTime });
+      fragments[currentId].text = text;
+      fragments[currentId].validated_at = now;
+      fragments[currentId].writing_time = writingTime;
     } else {
-      const res = await db.post('fragments', { idea_id: currentId, text, validated_at: now });
+      const res = await db.post('fragments', { idea_id: currentId, text, validated_at: now, writing_time: writingTime });
       fragments[currentId] = res[0];
     }
     await db.patch('ideas', `id=eq.${currentId}`, { done: true });
@@ -993,35 +1020,67 @@ function setFilter(btn, f) {
 function renderIdeas() {
   let list = [...ideas];
   if (ideasSearch) list = list.filter(i => i.title.toLowerCase().includes(ideasSearch.toLowerCase()));
-  if (ideasFilter === 'pending') list = list.filter(i => !i.done && !fragments[i.id]?.text);
-  if (ideasFilter === 'draft') list = list.filter(i => !i.done && fragments[i.id]?.text);
-  if (ideasFilter === 'done') list = list.filter(i => i.done);
-  if (ideasFilter === 'linked') list = list.filter(i => (links[i.id] || []).length > 0);
 
-  const done = list.filter(i => i.done), pending = list.filter(i => !i.done);
   let html = '';
 
-  if (pending.length) {
-    html += `<div class="ideas-section"><div class="ideas-section-label">En attente — ${pending.length}</div>`;
-    html += pending.map(idea => ideaRowHTML(idea)).join('');
-    html += '</div>';
+  if (ideasFilter === 'chrono') {
+    // Only validated fragments, sorted by validated_at
+    const chronoList = list
+      .filter(i => i.done && fragments[i.id]?.validated_at)
+      .sort((a, b) => new Date(fragments[a.id].validated_at) - new Date(fragments[b.id].validated_at));
+    if (!chronoList.length) {
+      html = '<div style="color:var(--ink-dim);font-size:13px;padding:20px 0;text-align:center">Aucun fragment validé.</div>';
+    } else {
+      html = `<div class="ideas-section"><div class="ideas-section-label">Ordre chronologique — ${chronoList.length} fragments</div>`;
+      html += chronoList.map((idea, i) => ideaRowHTML(idea, i + 1, true)).join('');
+      html += '</div>';
+    }
+  } else {
+    if (ideasFilter === 'pending') list = list.filter(i => !i.done && !fragments[i.id]?.text);
+    if (ideasFilter === 'draft') list = list.filter(i => !i.done && fragments[i.id]?.text);
+    if (ideasFilter === 'done') list = list.filter(i => i.done);
+    if (ideasFilter === 'linked') list = list.filter(i => (links[i.id] || []).length > 0);
+
+    const done = list.filter(i => i.done), pending = list.filter(i => !i.done);
+
+    if (pending.length) {
+      html += `<div class="ideas-section"><div class="ideas-section-label">En attente — ${pending.length}</div>`;
+      html += pending.map(idea => ideaRowHTML(idea)).join('');
+      html += '</div>';
+    }
+    if (done.length) {
+      html += `<div class="ideas-section"><div class="ideas-section-label">Traités — ${done.length}</div>`;
+      html += done.map(idea => ideaRowHTML(idea)).join('');
+      html += '</div>';
+    }
+    if (!list.length) html = '<div style="color:var(--ink-dim);font-size:13px;padding:20px 0;text-align:center">Aucune idée.</div>';
   }
-  if (done.length) {
-    html += `<div class="ideas-section"><div class="ideas-section-label">Traités — ${done.length}</div>`;
-    html += done.map(idea => ideaRowHTML(idea)).join('');
-    html += '</div>';
-  }
-  if (!list.length) html = '<div style="color:var(--ink-dim);font-size:13px;padding:20px 0;text-align:center">Aucune idée.</div>';
 
   $('ideas-list').innerHTML = html;
 }
 
-function ideaRowHTML(idea) {
+function ideaRowHTML(idea, chronoNum, showDate) {
   const frag = fragments[idea.id];
   const w = frag?.text ? cw(frag.text) : 0;
   const lcount = (links[idea.id] || []).length;
   const rcount = (refs[idea.id] || []).length;
+
+  let dateTag = '';
+  if (showDate && frag?.validated_at) {
+    const d = new Date(frag.validated_at);
+    const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+    const timeStr = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    dateTag = `<span class="meta-tag" style="color:var(--sauge)">📅 ${dateStr} ${timeStr}</span>`;
+  }
+  if (showDate && frag?.writing_time > 0) {
+    const m = Math.floor(frag.writing_time / 60), s = frag.writing_time % 60;
+    dateTag += `<span class="meta-tag">⏱ ${m}:${s.toString().padStart(2,'0')}</span>`;
+  }
+
+  const num = showDate ? `<span style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--ink-dim);flex-shrink:0;margin-top:2px">#${chronoNum}</span>` : '';
+
   return `<div class="idea-row ${idea.done ? 'done' : ''} fade-up" onclick="openReadOrWrite('${idea.id}')">
+    ${num}
     <span class="idea-bullet ${idea.done ? 'done' : ''}">${idea.done ? '✓' : '◦'}</span>
     <div class="idea-row-body">
       <div class="idea-row-title">${idea.title}</div>
@@ -1030,6 +1089,7 @@ function ideaRowHTML(idea) {
         ${lcount ? `<span class="meta-tag terra">↔ ${lcount}</span>` : ''}
         ${rcount ? `<span class="meta-tag">📚 ${rcount}</span>` : ''}
         ${!idea.done && frag?.text ? '<span class="meta-tag">brouillon</span>' : ''}
+        ${dateTag}
       </div>
     </div>
     <div style="display:flex;gap:5px;flex-shrink:0" onclick="event.stopPropagation()">
@@ -1056,6 +1116,21 @@ function openReadView(id) {
   const w = cw(frag?.text || '');
   $('read-wc').textContent = `${w} / 250 mots`;
   $('read-meter').style.width = Math.min(w/250*100,100) + '%';
+
+  // Meta: date + writing time
+  const meta = $('read-meta');
+  const metaTags = [];
+  if (frag?.validated_at) {
+    const d = new Date(frag.validated_at);
+    const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    const timeStr = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    metaTags.push(`<span class="read-meta-tag">📅 ${dateStr} à ${timeStr}</span>`);
+  }
+  if (frag?.writing_time && frag.writing_time > 0) {
+    const m = Math.floor(frag.writing_time / 60), s = frag.writing_time % 60;
+    metaTags.push(`<span class="read-meta-tag green">⏱ ${m}:${s.toString().padStart(2,'0')} de rédaction</span>`);
+  }
+  meta.innerHTML = metaTags.join('');
 
   // Links
   const linked = (links[id] || []);
@@ -1249,9 +1324,21 @@ function renderStats() {
   $('s-total').textContent = total;
   $('s-done').textContent = done;
   $('s-pct').textContent = pct + '% du livre';
+  $('s-remaining').textContent = total - done;
+  $('s-remaining-sub').textContent = total > 0 ? `${100 - pct}% restant` : '';
   $('s-words').textContent = fmt(allWords);
   $('s-pages').textContent = `~${Math.round(allWords / 275)} pages`;
   $('s-refs').textContent = allRefs;
+
+  // Average writing time
+  const timedFrags = Object.values(fragments).filter(f => f.writing_time > 0);
+  if (timedFrags.length) {
+    const avgSec = Math.round(timedFrags.reduce((a, f) => a + f.writing_time, 0) / timedFrags.length);
+    const am = Math.floor(avgSec / 60), as2 = avgSec % 60;
+    $('s-avgtime').textContent = `${am}:${as2.toString().padStart(2,'0')}`;
+  } else {
+    $('s-avgtime').textContent = '—';
+  }
 
   // Weekly challenge
   const weekGoal = 5;
