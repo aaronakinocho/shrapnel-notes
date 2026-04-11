@@ -692,6 +692,7 @@ const db = {
 // ===== HELPERS =====
 const $ = id => document.getElementById(id);
 let ideas = [], fragments = {}, links = {}, refs = {};
+let researchNotes = [], aiAnalyses = {};
 let currentId = null, readId = null, editId = null;
 let currentTab = 'links', currentRefType = { emoji: '📖', label: 'Livre' };
 let ideasFilter = 'all', ideasSearch = '';
@@ -1681,7 +1682,6 @@ function renderEditRefs() {
 }
 
 // ===== IA DE RELECTURE =====
-let aiAnalyses = {}; // idea_id -> [analyses]
 
 async function loadAIAnalyses(ideaId) {
   try {
@@ -1766,7 +1766,6 @@ async function analyseFragment(forceNew) {
   if (!idea || !frag?.text) return;
   if (!researchNotes.length) { notify('Ajoute des notes de recherche d\'abord'); return; }
 
-  // Open panel
   const panel = $('ai-panel');
   panel.style.display = 'block';
   $('ai-loading').style.display = 'block';
@@ -1820,7 +1819,6 @@ Réponds en français. Sois direct et précis. Parle à l'auteur comme un lecteu
     const data = await response.json();
     const content = data.content[0].text;
 
-    // Save to Supabase
     const res = await db.post('ai_analyses', { idea_id: readId, content });
     if (!aiAnalyses[readId]) aiAnalyses[readId] = [];
     aiAnalyses[readId].unshift(res[0]);
@@ -1852,15 +1850,11 @@ async function convertToResearchNote(analysisId) {
   const d = new Date(analysis.created_at);
   const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
-  const title = `Analyse IA — ${idea.title}`;
-  const source = `Fragment : "${idea.title}" · ${dateStr}`;
-  const content = analysis.content;
-
   try {
     const res = await db.post('research_notes', {
-      title,
-      source,
-      content,
+      title: `Analyse IA — ${idea.title}`,
+      source: `Fragment : "${idea.title}" · ${dateStr}`,
+      content: analysis.content,
       source_type: 'Analyse IA',
       source_emoji: '✦'
     });
@@ -1868,84 +1862,8 @@ async function convertToResearchNote(analysisId) {
     notify('Ajouté à la bibliothèque ✓');
   } catch(e) { notify('Erreur lors de la conversion'); }
 }
-  const idea = ideas.find(i => i.id === readId);
-  const frag = fragments[readId];
-  if (!idea || !frag?.text) return;
-  if (!researchNotes.length) { notify('Ajoute des notes de recherche d\'abord'); return; }
 
-  const panel = $('ai-panel');
-  const result = $('ai-result');
-  panel.style.display = 'block';
-  result.innerHTML = `<div style="display:flex;align-items:center;gap:10px;color:var(--ink-dim);font-family:'DM Sans',sans-serif;font-size:13px;">
-    <span style="animation:pulse 1.5s ease infinite;">✦</span>
-    <span>Analyse en cours…</span>
-  </div>`;
-  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-  const div = document.createElement('div');
-  div.innerHTML = frag.text;
-  const plainText = div.innerText || '';
-
-  const notesContext = researchNotes.map((n, i) =>
-    `Note ${i+1} — ${n.title} (${n.source_type} : ${n.source})\n${n.content}`
-  ).join('\n\n---\n\n');
-
-  const prompt = `Tu es un assistant littéraire qui aide un auteur francophone à enrichir ses textes.
-
-Voici le fragment que l'auteur vient de rédiger :
-
-TITRE : ${idea.title}
-
-TEXTE :
-${plainText}
-
----
-
-Voici sa bibliothèque de notes de recherche :
-
-${notesContext}
-
----
-
-Ton rôle : analyser ce fragment et proposer des connexions pertinentes avec les notes de recherche. Sois précis, concis et utile. Structure ta réponse en trois parties :
-
-1. **Connexions directes** — quelles notes résonnent le plus avec ce fragment et pourquoi (2-3 max)
-2. **Citations ou idées à intégrer** — des extraits ou concepts des notes qui pourraient enrichir ou approfondir ce fragment
-3. **Angles non explorés** — ce que l'auteur n'a pas encore dit sur ce sujet et qui pourrait compléter le fragment
-
-Réponds en français. Sois direct, pas condescendant. Parle à l'auteur comme un lecteur intelligent qui a lu les mêmes livres.`;
-
-  try {
-    const response = await fetch('/api/analyse', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-opus-4-5',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-
-    if (!response.ok) throw new Error(await response.text());
-    const data = await response.json();
-    const text = data.content[0].text;
-
-    const formatted = text
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/^(\d+\.\s)/gm, '<br><strong>$1</strong>')
-      .replace(/\n\n/g, '<br><br>')
-      .replace(/\n/g, '<br>');
-
-    result.innerHTML = formatted;
-  } catch(e) {
-    console.error(e);
-    result.innerHTML = `<span style="color:var(--terracotta);font-family:'DM Sans',sans-serif;font-size:13px;">Erreur lors de l'analyse. Vérifie ta connexion et réessaie.</span>`;
-  }
-}
-
-// ===== RESEARCH NOTES =====
-let researchNotes = [];
 let currentRnType = { emoji: '📖', label: 'Livre' };
 let editingRnId = null;
 
