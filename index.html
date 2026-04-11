@@ -451,6 +451,15 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
         </div>
 
         <div>
+          <div class="section-label">Exporter le manuscrit</div>
+          <div style="display:flex;gap:10px;">
+            <button onclick="exportManuscript('pdf')" style="flex:1;padding:12px;background:var(--white);border:1px solid var(--sable-mid);border-radius:12px;font-size:13px;color:var(--ink-mid);text-align:center;">📄 PDF</button>
+            <button onclick="exportManuscript('txt')" style="flex:1;padding:12px;background:var(--white);border:1px solid var(--sable-mid);border-radius:12px;font-size:13px;color:var(--ink-mid);text-align:center;">📝 TXT</button>
+          </div>
+          <div style="font-size:11px;color:var(--ink-dim);margin-top:6px;">Tous les fragments validés, en ordre chronologique.</div>
+        </div>
+
+        <div>
           <div class="section-label">Badges</div>
           <div class="badges-grid" id="badges-grid"></div>
         </div>
@@ -465,7 +474,24 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
     <!-- IDEAS -->
     <div id="v-ideas" class="view">
       <div class="ideas-wrap">
-        <input class="search-input" type="text" placeholder="Rechercher…" oninput="filterIdeas(this.value)"/>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <input class="search-input" style="margin-bottom:0;flex:1;margin-right:10px;" type="text" placeholder="Rechercher…" oninput="filterIdeas(this.value)"/>
+          <button onclick="showAddPanel()" style="background:var(--terracotta);color:#fff;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:500;flex-shrink:0;">+ Ajouter</button>
+        </div>
+
+        <!-- Add panel (hidden by default) -->
+        <div id="add-panel" style="display:none;background:var(--white);border:1px solid var(--sable-mid);border-radius:14px;padding:16px;margin-bottom:16px;">
+          <div style="font-size:10px;color:var(--ink-dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">Nouvelles idées</div>
+          <textarea id="add-textarea" style="width:100%;min-height:120px;padding:12px;font-size:14px;line-height:1.75;background:var(--sable);border:1px solid var(--sable-mid);border-radius:10px;color:var(--ink);resize:none;" placeholder="Une idée par ligne…&#10;La patience comme stratégie&#10;Ce que l'échec enseigne vraiment…" oninput="updateDetected()"></textarea>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
+            <span id="detected" style="font-size:11px;color:var(--sauge);"></span>
+            <div style="display:flex;gap:8px;">
+              <button onclick="hideAddPanel()" style="padding:9px 16px;border:1px solid var(--sable-mid);border-radius:9px;font-size:13px;color:var(--ink-dim);">Annuler</button>
+              <button onclick="addIdeas()" style="padding:9px 20px;background:var(--terracotta);color:#fff;border-radius:9px;font-size:13px;font-weight:500;">Ajouter →</button>
+            </div>
+          </div>
+        </div>
+
         <div class="filter-row">
           <button class="filter-chip active" onclick="setFilter(this,'all')">Toutes</button>
           <button class="filter-chip" onclick="setFilter(this,'pending')">En attente</button>
@@ -551,16 +577,34 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
       </div>
     </div>
 
-    <!-- ADD -->
-    <div id="v-add" class="view">
-      <div class="add-wrap">
-        <div>
-          <div class="form-label">Nouvelles idées</div>
-          <textarea id="add-textarea" placeholder="Une idée par ligne…&#10;&#10;La patience comme stratégie&#10;Ce que l'échec enseigne vraiment&#10;Pourquoi le cadre libère…" oninput="updateDetected()"></textarea>
+    <!-- RESEARCH NOTES -->
+    <div id="v-research" class="view">
+      <div class="ideas-wrap">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div>
+            <div style="font-size:10px;color:var(--ink-dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:2px;">Bibliothèque</div>
+            <div style="font-family:Georgia,serif;font-size:20px;color:var(--ink);">Notes de recherche</div>
+          </div>
+          <button onclick="showResearchForm()" style="background:var(--terracotta);color:#fff;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:500;flex-shrink:0;">+ Note</button>
         </div>
-        <div class="add-hint">Une idée par ligne. Colle autant de titres que tu veux, puis valide.</div>
-        <div class="detected" id="detected"></div>
-        <button class="btn-add" onclick="addIdeas()">Ajouter →</button>
+        <div id="research-form" style="display:none;background:var(--white);border:1.5px solid var(--sauge);border-radius:14px;padding:16px;margin-bottom:16px;">
+          <div style="font-size:10px;color:var(--ink-dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">Nouvelle note</div>
+          <input id="rn-title" type="text" placeholder="Titre de la note…" style="width:100%;padding:10px 14px;font-size:14px;background:var(--sable);border:1px solid var(--sable-mid);border-radius:10px;color:var(--ink);margin-bottom:8px;outline:none;"/>
+          <input id="rn-source" type="text" placeholder="Source (auteur, titre, URL…)" style="width:100%;padding:10px 14px;font-size:13px;background:var(--sable);border:1px solid var(--sable-mid);border-radius:10px;color:var(--ink);margin-bottom:8px;outline:none;"/>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;">
+            <button class="ref-type-btn active" id="rn-type-active" onclick="setRnType(this,'📖','Livre')">📖 Livre</button>
+            <button class="ref-type-btn" onclick="setRnType(this,'🎬','Vidéo')">🎬 Vidéo</button>
+            <button class="ref-type-btn" onclick="setRnType(this,'🔗','Lien')">🔗 Lien</button>
+            <button class="ref-type-btn" onclick="setRnType(this,'🎙️','Podcast')">🎙️ Podcast</button>
+            <button class="ref-type-btn" onclick="setRnType(this,'📄','Article')">📄 Article</button>
+          </div>
+          <textarea id="rn-content" placeholder="Résumé, extrait, citation…" style="width:100%;min-height:120px;padding:12px;font-family:Georgia,serif;font-size:14px;line-height:1.8;background:var(--sable);border:1px solid var(--sable-mid);border-radius:10px;color:var(--ink);resize:none;outline:none;"></textarea>
+          <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end;">
+            <button onclick="hideResearchForm()" style="padding:9px 16px;border:1px solid var(--sable-mid);border-radius:9px;font-size:13px;color:var(--ink-dim);">Annuler</button>
+            <button onclick="saveResearchNote()" style="padding:9px 20px;background:var(--sauge);color:#fff;border-radius:9px;font-size:13px;font-weight:500;">Enregistrer</button>
+          </div>
+        </div>
+        <div id="research-list"></div>
       </div>
     </div>
 
@@ -580,9 +624,9 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polygon points="6,5 10,4 14,6 15,10 13,14 9,16 5,14 4,10" stroke="currentColor" stroke-width="1.3" fill="none"/><line x1="14" y1="8" x2="19" y2="8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="14" y1="11" x2="21" y2="11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="14" y1="14" x2="19" y2="14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
       <span>Idées</span>
     </button>
-    <button class="nav-item" onclick="switchView('add',this)">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polygon points="12,3 15,7 19,8 17,12 19,16 15,17 12,21 9,17 5,16 7,12 5,8 9,7" stroke="currentColor" stroke-width="1.3" fill="none"/><line x1="12" y1="9" x2="12" y2="15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="9" y1="12" x2="15" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-      <span>Ajouter</span>
+    <button class="nav-item" onclick="switchView('research',this)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="10" height="14" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><line x1="7" y1="7" x2="11" y2="7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="7" y1="10" x2="11" y2="10" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><circle cx="17" cy="17" r="3" stroke="currentColor" stroke-width="1.3" fill="none"/><line x1="19.5" y1="19.5" x2="22" y2="22" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      <span>Recherche</span>
     </button>
   </div>
 </div>
@@ -739,14 +783,16 @@ function notify(msg) {
 // ===== LOAD =====
 async function loadAll() {
   try {
-    const [ideasData, fragsData, linksData, refsData, actData] = await Promise.all([
+    const [ideasData, fragsData, linksData, refsData, actData, researchData] = await Promise.all([
       db.get('ideas', { select: '*', order: 'created_at.asc' }),
       db.get('fragments', { select: 'id,idea_id,text,validated_at,writing_time,created_at,updated_at' }),
       db.get('fragment_links', { select: '*' }),
       db.get('biblio_refs', { select: '*' }),
       db.get('activity', { select: '*', order: 'day.desc' }),
+      db.get('research_notes', { select: '*', order: 'created_at.desc' }),
     ]);
     ideas = ideasData || [];
+    researchNotes = researchData || [];
     fragments = {};
     (fragsData || []).forEach(f => fragments[f.idea_id] = f);
     links = {};
@@ -773,7 +819,7 @@ async function loadAll() {
 
 // ===== NAVIGATION =====
 function switchView(v, btn) {
-  if (['write','stats','ideas','add'].includes(v)) prevView = v;
+  if (['write','stats','ideas','research'].includes(v)) prevView = v;
   document.querySelectorAll('.view').forEach(el => { el.classList.remove('active'); el.style.display = ''; });
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   const el = $('v-'+v);
@@ -781,6 +827,7 @@ function switchView(v, btn) {
   if (btn) btn.classList.add('active');
   if (v === 'stats') renderStats();
   if (v === 'ideas') renderIdeas();
+  if (v === 'research') renderResearchNotes();
   $('main').scrollTop = 0;
 }
 
@@ -1249,7 +1296,16 @@ async function reopenIdea() {
   } catch(e) { notify('Erreur'); }
 }
 
-// ===== ADD =====
+// ===== ADD PANEL =====
+function showAddPanel() {
+  $('add-panel').style.display = 'block';
+  $('add-textarea').focus();
+}
+function hideAddPanel() {
+  $('add-panel').style.display = 'none';
+  $('add-textarea').value = '';
+  $('detected').textContent = '';
+}
 function updateDetected() {
   const lines = $('add-textarea').value.split('\n').filter(l => l.trim()).length;
   $('detected').textContent = lines ? `${lines} idée${lines > 1 ? 's' : ''} détectée${lines > 1 ? 's' : ''}` : '';
@@ -1262,9 +1318,9 @@ async function addIdeas() {
     const rows = lines.map((title, i) => ({ title, done: false, position: ideas.length + i }));
     const res = await db.post('ideas', rows);
     ideas.push(...(res || []));
-    $('add-textarea').value = '';
-    $('detected').textContent = '';
+    hideAddPanel();
     updateEmptyState();
+    renderIdeas();
     notify(`${lines.length} idée${lines.length > 1 ? 's' : ''} ajoutée${lines.length > 1 ? 's' : ''}`);
   } catch(e) { notify('Erreur lors de l\'ajout'); }
 }
@@ -1596,6 +1652,229 @@ function renderEditRefs() {
       </div>
       <button class="ref-rm" onclick="removeEditRef('${r.id}')">×</button>
     </div>`).join('') : '<div style="font-size:12px;color:var(--ink-dim)">Aucune référence.</div>';
+}
+
+// ===== RESEARCH NOTES =====
+let researchNotes = [];
+let currentRnType = { emoji: '📖', label: 'Livre' };
+let editingRnId = null;
+
+async function loadResearchNotes() {
+  try {
+    const data = await db.get('research_notes', { select: '*', order: 'created_at.desc' });
+    researchNotes = data || [];
+  } catch(e) { researchNotes = []; }
+}
+
+function setRnType(btn, emoji, label) {
+  document.querySelectorAll('#v-research .ref-type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentRnType = { emoji, label };
+}
+
+function showResearchForm(note) {
+  editingRnId = note ? note.id : null;
+  $('rn-title').value = note ? note.title : '';
+  $('rn-source').value = note ? note.source : '';
+  $('rn-content').value = note ? note.content : '';
+  $('research-form').style.display = 'block';
+  $('rn-title').focus();
+}
+
+function hideResearchForm() {
+  $('research-form').style.display = 'none';
+  editingRnId = null;
+  $('rn-title').value = '';
+  $('rn-source').value = '';
+  $('rn-content').value = '';
+}
+
+async function saveResearchNote() {
+  const title = $('rn-title').value.trim();
+  const source = $('rn-source').value.trim();
+  const content = $('rn-content').value.trim();
+  if (!title) { notify('Titre requis'); return; }
+  try {
+    if (editingRnId) {
+      const res = await db.patch('research_notes', `id=eq.${editingRnId}`, { title, source, content, source_type: currentRnType.label, source_emoji: currentRnType.emoji });
+      const idx = researchNotes.findIndex(n => n.id === editingRnId);
+      if (idx !== -1) researchNotes[idx] = { ...researchNotes[idx], title, source, content, source_type: currentRnType.label, source_emoji: currentRnType.emoji };
+      notify('Note mise à jour ✓');
+    } else {
+      const res = await db.post('research_notes', { title, source, content, source_type: currentRnType.label, source_emoji: currentRnType.emoji });
+      researchNotes.unshift(res[0]);
+      notify('Note enregistrée ✓');
+    }
+    hideResearchForm();
+    renderResearchNotes();
+  } catch(e) { notify('Erreur lors de l\'enregistrement'); }
+}
+
+async function deleteResearchNote(id) {
+  try {
+    await db.delete('research_notes', `id=eq.${id}`);
+    researchNotes = researchNotes.filter(n => n.id !== id);
+    renderResearchNotes();
+    notify('Note supprimée');
+  } catch(e) {}
+}
+
+function renderResearchNotes() {
+  const el = $('research-list');
+  if (!researchNotes.length) {
+    el.innerHTML = '<div style="color:var(--ink-dim);font-size:13px;text-align:center;padding:32px 0;">Aucune note de recherche.<br><span style="font-size:11px;">Commence par ajouter un résumé de lecture.</span></div>';
+    return;
+  }
+  el.innerHTML = researchNotes.map(note => {
+    const d = new Date(note.created_at);
+    const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+    const preview = note.content ? note.content.slice(0, 120) + (note.content.length > 120 ? '…' : '') : '';
+    return `<div class="idea-row fade-up" style="flex-direction:column;align-items:stretch;gap:8px;cursor:default;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+            <span style="font-size:14px;">${note.source_emoji || '📖'}</span>
+            <span style="font-size:13px;font-weight:500;color:var(--ink);">${note.title}</span>
+          </div>
+          ${note.source ? `<div style="font-size:11px;color:var(--ink-dim);">${note.source}</div>` : ''}
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+          <button onclick="showResearchForm(researchNotes.find(n=>n.id==='${note.id}'))" style="font-size:11px;padding:4px 8px;border:1px solid var(--sable-mid);border-radius:6px;color:var(--ink-dim);">Éditer</button>
+          <button onclick="deleteResearchNote('${note.id}')" style="font-size:11px;padding:4px 8px;border:1px solid rgba(180,50,50,0.2);border-radius:6px;color:#c0392b;">🗑</button>
+        </div>
+      </div>
+      ${preview ? `<div style="font-family:Georgia,serif;font-size:13px;color:var(--ink-mid);line-height:1.7;">${preview}</div>` : ''}
+      <div style="font-size:10px;color:var(--sable-dark);">${dateStr}</div>
+    </div>`;
+  }).join('');
+}
+
+// ===== MANUSCRIPT EXPORT =====
+function exportManuscript(format) {
+  const validated = ideas
+    .filter(i => i.done && fragments[i.id]?.validated_at)
+    .sort((a, b) => new Date(fragments[a.id].validated_at) - new Date(fragments[b.id].validated_at));
+
+  if (!validated.length) { notify('Aucun fragment validé à exporter'); return; }
+
+  if (format === 'pdf') exportManuscriptPDF(validated);
+  else if (format === 'txt') exportManuscriptTXT(validated);
+}
+
+function exportManuscriptPDF(validated) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const margin = 28, maxW = 210 - margin * 2;
+  let y = 40;
+
+  // Cover page
+  doc.setFillColor(74, 124, 89);
+  doc.rect(0, 0, 210, 60, 'F');
+  doc.setTextColor(240, 247, 242);
+  doc.setFont('times', 'bolditalic');
+  doc.setFontSize(26);
+  doc.text('Manuscrit', margin, 35);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.text(`${validated.length} fragments · ${new Date().toLocaleDateString('fr-FR')}`, margin, 48);
+
+  // Fragments
+  validated.forEach((idea, i) => {
+    doc.addPage();
+    y = 30;
+    const frag = fragments[idea.id];
+    const d = new Date(frag.validated_at);
+    const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    const timeStr = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+    // Fragment number
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(155, 142, 126);
+    doc.text(`Fragment ${i + 1} · ${dateStr} à ${timeStr}`, margin, y);
+    y += 8;
+
+    // Title
+    doc.setFont('times', 'bolditalic');
+    doc.setFontSize(20);
+    doc.setTextColor(28, 28, 28);
+    const titleLines = doc.splitTextToSize(idea.title, maxW);
+    doc.text(titleLines, margin, y);
+    y += titleLines.length * 9 + 4;
+
+    // Divider
+    doc.setDrawColor(200, 196, 190);
+    doc.setLineWidth(0.3);
+    doc.line(margin, y, 210 - margin, y);
+    y += 10;
+
+    // Body
+    const div = document.createElement('div');
+    div.innerHTML = frag.text || '';
+    const plainText = div.innerText || '';
+    doc.setFont('times', 'normal');
+    doc.setFontSize(12);
+    doc.setTextColor(74, 66, 56);
+    const bodyLines = doc.splitTextToSize(plainText, maxW);
+    bodyLines.forEach(line => {
+      if (y > 270) { doc.addPage(); y = 25; }
+      doc.text(line, margin, y);
+      y += 7;
+    });
+
+    // Writing time
+    if (frag.writing_time > 0) {
+      y += 6;
+      const m = Math.floor(frag.writing_time / 60), s = frag.writing_time % 60;
+      doc.setFontSize(8);
+      doc.setTextColor(155, 142, 126);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`⏱ ${m}:${s.toString().padStart(2,'0')} · ${cw(frag.text)} mots`, margin, y);
+    }
+
+    // Footer
+    doc.setFontSize(8);
+    doc.setTextColor(200, 196, 190);
+    doc.text('shrapnelnotes.com', 210/2, 290, { align: 'center' });
+    doc.text(`${i+1} / ${validated.length}`, 210 - margin, 290, { align: 'right' });
+  });
+
+  doc.save(`manuscrit-shrapnel-${new Date().toISOString().split('T')[0]}.pdf`);
+  notify('Manuscrit PDF exporté ✓');
+}
+
+function exportManuscriptTXT(validated) {
+  let txt = 'MANUSCRIT — SHRAPNEL NOTES\n';
+  txt += `${validated.length} fragments · ${new Date().toLocaleDateString('fr-FR')}\n`;
+  txt += '═'.repeat(50) + '\n\n';
+
+  validated.forEach((idea, i) => {
+    const frag = fragments[idea.id];
+    const d = new Date(frag.validated_at);
+    const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    const timeStr = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const div = document.createElement('div');
+    div.innerHTML = frag.text || '';
+    const plainText = div.innerText || '';
+
+    txt += `Fragment ${i + 1}\n`;
+    txt += `${dateStr} à ${timeStr}\n`;
+    txt += '─'.repeat(40) + '\n';
+    txt += `${idea.title}\n\n`;
+    txt += plainText + '\n';
+    if (frag.writing_time > 0) {
+      const m = Math.floor(frag.writing_time/60), s = frag.writing_time%60;
+      txt += `\n[${cw(frag.text)} mots · rédigé en ${m}:${s.toString().padStart(2,'0')}]\n`;
+    }
+    txt += '\n' + '═'.repeat(50) + '\n\n';
+  });
+
+  const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `manuscrit-shrapnel-${new Date().toISOString().split('T')[0]}.txt`;
+  a.click(); URL.revokeObjectURL(url);
+  notify('Manuscrit TXT exporté ✓');
 }
 
 // ===== PWA — mise à jour automatique =====
