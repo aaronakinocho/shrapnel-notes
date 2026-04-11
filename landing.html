@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="description" content="Shrapnel Notes — Atelier d'écriture fragmentée pour auteurs, journalistes et chercheurs. Écris ton livre fragment par fragment, avec l'IA comme lecteur de fond."/>
+<title>Shrapnel Notes — Écris ton livre, fragment par fragment</title>
+<link rel="icon" href="icon-192.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: 'DM Sans', system-ui, sans-serif; background: #4A7C59; color: #F0F7F2; -webkit-font-smoothing: antialiased; }
+a { text-decoration: none; color: inherit; }
+button { cursor: pointer; font-family: inherit; border: none; }
+
+/* NAV */
+nav { padding: 18px 40px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(240,247,242,0.1); }
+.nav-brand { display: flex; align-items: center; gap: 10px; }
+.nav-name { font-size: 16px; font-weight: 500; color: #F0F7F2; }
+.nav-actions { display: flex; gap: 8px; }
+.btn-ghost { padding: 8px 18px; border-radius: 8px; font-size: 13px; color: rgba(240,247,242,0.75); background: rgba(240,247,242,0.08); border: 1px solid rgba(240,247,242,0.15); transition: background 0.15s; }
+.btn-ghost:hover { background: rgba(240,247,242,0.15); }
+.btn-cta-sm { padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 500; background: rgba(224,122,80,0.85); color: rgba(255,255,255,0.95); border: 1px solid rgba(224,122,80,0.5); transition: background 0.15s; }
+.btn-cta-sm:hover { background: #E07A50; }
+
+/* HERO */
+.hero { padding: 64px 24px 56px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+.hero-badge { background: rgba(224,122,80,0.15); border: 1px solid rgba(224,122,80,0.3); color: rgba(224,122,80,0.9); padding: 5px 16px; border-radius: 20px; font-size: 12px; letter-spacing: 0.05em; }
+.hero-title { font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-size: clamp(28px, 5vw, 40px); font-weight: normal; color: #F0F7F2; line-height: 1.25; max-width: 520px; }
+.hero-sub { font-size: 16px; color: rgba(240,247,242,0.65); line-height: 1.75; max-width: 440px; font-weight: 300; }
+.hero-cta { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+.btn-primary { padding: 14px 32px; background: #E07A50; color: #FFF; border-radius: 12px; font-size: 15px; font-weight: 500; transition: opacity 0.15s; }
+.btn-primary:hover { opacity: 0.9; }
+.btn-secondary { padding: 14px 24px; background: rgba(240,247,242,0.1); color: rgba(240,247,242,0.8); border-radius: 12px; font-size: 15px; border: 1px solid rgba(240,247,242,0.18); transition: background 0.15s; }
+.btn-secondary:hover { background: rgba(240,247,242,0.15); }
+
+/* FEATURES */
+.features { background: #F5EFE6; padding: 56px 24px; }
+.feat-label { font-size: 10px; color: #9B8E7E; letter-spacing: 0.12em; text-transform: uppercase; text-align: center; margin-bottom: 28px; }
+.feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; max-width: 760px; margin: 0 auto; }
+.feat { background: #FFF; border: 1px solid #EDE5D9; border-radius: 16px; padding: 22px; }
+.feat-icon { width: 40px; height: 40px; background: rgba(74,124,89,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+.feat-title { font-size: 14px; font-weight: 500; color: #1C1C1C; margin-bottom: 6px; }
+.feat-body { font-size: 13px; color: #9B8E7E; line-height: 1.65; }
+
+/* LOGIN SECTION */
+.login-section { background: #F5EFE6; padding: 0 24px 64px; display: flex; justify-content: center; }
+.login-card { background: #FFF; border: 1px solid #EDE5D9; border-radius: 18px; padding: 32px; width: 100%; max-width: 380px; }
+.login-title { font-family: Georgia, serif; font-size: 20px; color: #1C1C1C; margin-bottom: 4px; font-weight: normal; }
+.login-sub { font-size: 12px; color: #9B8E7E; margin-bottom: 22px; }
+.tabs { display: flex; gap: 3px; background: #F5EFE6; border-radius: 10px; padding: 3px; margin-bottom: 18px; }
+.tab { flex: 1; padding: 8px; border-radius: 8px; font-size: 13px; text-align: center; color: #9B8E7E; cursor: pointer; background: transparent; border: none; font-family: inherit; transition: all 0.15s; }
+.tab.active { background: #FFF; color: #1C1C1C; font-weight: 500; }
+.field-label { font-size: 10px; color: #9B8E7E; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 5px; }
+.field-input { width: 100%; padding: 12px 14px; background: #F5EFE6; border: 1px solid #EDE5D9; border-radius: 10px; font-size: 14px; color: #1C1C1C; margin-bottom: 12px; font-family: inherit; outline: none; transition: border-color 0.15s; }
+.field-input:focus { border-color: #4A7C59; }
+.err { display: none; font-size: 12px; color: #c0392b; margin: -6px 0 10px; }
+.login-btn { width: 100%; padding: 13px; background: #E07A50; color: #FFF; border-radius: 10px; font-size: 14px; font-weight: 500; transition: opacity 0.15s; }
+.login-btn:hover { opacity: 0.9; }
+.forgot { text-align: center; margin-top: 10px; }
+.forgot button { font-size: 12px; color: #9B8E7E; background: none; border: none; cursor: pointer; font-family: inherit; }
+.divider { height: 0.5px; background: #EDE5D9; margin: 16px 0; }
+.footer-note { font-size: 11px; color: #C8C4BE; text-align: center; line-height: 1.5; }
+
+/* FOOTER */
+footer { background: #3A6B48; padding: 24px 40px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.footer-brand { display: flex; align-items: center; gap: 8px; font-size: 14px; color: rgba(240,247,242,0.6); }
+.footer-links { display: flex; gap: 20px; font-size: 12px; color: rgba(240,247,242,0.4); }
+
+@media (max-width: 600px) {
+  nav { padding: 14px 18px; }
+  .hero { padding: 48px 18px 40px; }
+  footer { padding: 20px 18px; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <svg width="28" height="28" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#3A6B48"/><polygon points="32,8 44,14 52,26 48,36 38,44 28,50 16,44 12,30 18,18 28,12" fill="none" stroke="#F0F7F2" stroke-width="1.5"/><polyline points="32,8 36,20 30,28 34,38 28,50" fill="none" stroke="#E07A50" stroke-width="2" stroke-linecap="round"/><circle cx="30" cy="28" r="2.5" fill="#E07A50"/></svg>
+    <span class="nav-name">Shrapnel Notes</span>
+  </div>
+  <div class="nav-actions">
+    <button class="btn-ghost" onclick="showTab('login')">Se connecter</button>
+    <button class="btn-cta-sm" onclick="showTab('signup')">Commencer</button>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-badge">Atelier d'écriture · Beta</div>
+  <h1 class="hero-title">Écris ton livre,<br>fragment par fragment.</h1>
+  <p class="hero-sub">Shrapnel Notes t'aide à capturer tes idées, les développer une par une, et les assembler en un manuscrit cohérent — avec l'IA comme lecteur de fond.</p>
+  <div class="hero-cta">
+    <button class="btn-primary" onclick="document.querySelector('.login-section').scrollIntoView({behavior:'smooth'});showTab('signup')">Créer mon compte gratuit</button>
+    <button class="btn-secondary" onclick="document.querySelector('.features').scrollIntoView({behavior:'smooth'})">Voir comment ça marche</button>
+  </div>
+</section>
+
+<section class="features">
+  <div class="feat-label">Pourquoi Shrapnel Notes</div>
+  <div class="feat-grid">
+    <div class="feat">
+      <div class="feat-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><polyline points="5,19 8,14 12,16 16,8 19,5" stroke="#4A7C59" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="8" x2="19" y2="5" stroke="#E07A50" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="16" r="1.5" fill="#E07A50"/></svg>
+      </div>
+      <div class="feat-title">Écriture sans blocage</div>
+      <div class="feat-body">L'app pioche une idée au hasard parmi les tiennes. Tu n'as plus à décider quoi écrire — tu écris, c'est tout.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="10" height="14" rx="2" stroke="#4A7C59" stroke-width="1.4" fill="none"/><line x1="7" y1="7" x2="11" y2="7" stroke="#4A7C59" stroke-width="1.1" stroke-linecap="round"/><line x1="7" y1="10" x2="11" y2="10" stroke="#4A7C59" stroke-width="1.1" stroke-linecap="round"/><circle cx="17" cy="17" r="3" stroke="#4A7C59" stroke-width="1.3" fill="none"/><line x1="19.5" y1="19.5" x2="22" y2="22" stroke="#4A7C59" stroke-width="1.4" stroke-linecap="round"/></svg>
+      </div>
+      <div class="feat-title">Recherche connectée</div>
+      <div class="feat-body">Tes lectures, extraits et citations dans une bibliothèque. L'IA les relie à tes fragments au moment de la relecture.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><polygon points="12,4 17,8 19,14 15,19 9,19 5,14 7,8" stroke="#4A7C59" stroke-width="1.4" fill="none"/><polyline points="12,4 13,10 11,14 12,19" stroke="#E07A50" stroke-width="1.3" stroke-linecap="round"/><circle cx="12" cy="4" r="1.2" fill="#E07A50"/></svg>
+      </div>
+      <div class="feat-title">Manuscrit en un clic</div>
+      <div class="feat-body">Tous tes fragments validés s'exportent en ordre chronologique — PDF pour annoter, TXT pour éditer dans Word ou Google Docs.</div>
+    </div>
+  </div>
+</section>
+
+<section class="login-section">
+  <div class="login-card">
+    <div class="login-title">Commencer à écrire</div>
+    <div class="login-sub">Gratuit · Aucune carte bancaire requise</div>
+    <div class="tabs">
+      <button class="tab active" id="tab-signup" onclick="showTab('signup')">Inscription</button>
+      <button class="tab" id="tab-login" onclick="showTab('login')">Connexion</button>
+    </div>
+    <div class="field-label">Email</div>
+    <input class="field-input" id="email" type="email" placeholder="ton@email.com" onkeydown="if(event.key==='Enter')document.getElementById('password').focus()"/>
+    <div class="field-label">Mot de passe</div>
+    <input class="field-input" id="password" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')handleAuth()"/>
+    <div class="err" id="auth-err"></div>
+    <button class="login-btn" id="auth-btn" onclick="handleAuth()">Créer mon compte →</button>
+    <div class="forgot" id="forgot-wrap">
+      <button onclick="handleForgot()">Mot de passe oublié ?</button>
+    </div>
+    <div class="divider"></div>
+    <div class="footer-note">En t'inscrivant, tu rejoins les premiers utilisateurs de Shrapnel Notes.</div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-brand">
+    <svg width="20" height="20" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#3A6B48"/><polygon points="32,8 44,14 52,26 48,36 38,44 28,50 16,44 12,30 18,18 28,12" fill="none" stroke="#F0F7F2" stroke-width="1.5"/><polyline points="32,8 36,20 30,28 34,38 28,50" fill="none" stroke="#E07A50" stroke-width="2" stroke-linecap="round"/></svg>
+    Shrapnel Notes · 2026
+  </div>
+  <div class="footer-links">
+    <span>shrapnelnotes.com</span>
+  </div>
+</footer>
+
+<script>
+const SUPABASE_URL = 'https://dxvitpklayuioxtpygvz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4dml0cGtsYXl1aW94dHB5Z3Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NDYxMDcsImV4cCI6MjA5MTIyMjEwN30.-zxDu_NIr4B4TPzOgZRki2Pm-qOkI1ovf7qbq-1s2qc';
+
+let currentTab = 'signup';
+
+function showTab(tab) {
+  currentTab = tab;
+  document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+  const btn = document.getElementById('auth-btn');
+  const forgot = document.getElementById('forgot-wrap');
+  btn.textContent = tab === 'signup' ? 'Créer mon compte →' : 'Se connecter →';
+  forgot.style.display = tab === 'login' ? 'block' : 'none';
+  showErr('');
+}
+
+function showErr(msg, success) {
+  const el = document.getElementById('auth-err');
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+  el.style.color = success ? '#4A7C59' : '#c0392b';
+}
+
+async function handleAuth() {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  if (!email || !password) { showErr('Email et mot de passe requis.'); return; }
+  const btn = document.getElementById('auth-btn');
+  btn.style.opacity = '0.6';
+  btn.textContent = '…';
+  showErr('');
+
+  const endpoint = currentTab === 'signup'
+    ? `${SUPABASE_URL}/auth/v1/signup`
+    : `${SUPABASE_URL}/auth/v1/token?grant_type=password`;
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      const msg = data.error_description || data.msg || 'Erreur.';
+      showErr(msg === 'Invalid login credentials' ? 'Email ou mot de passe incorrect.' : msg);
+      btn.style.opacity = '1';
+      btn.textContent = currentTab === 'signup' ? 'Créer mon compte →' : 'Se connecter →';
+      return;
+    }
+
+    if (currentTab === 'signup' && !data.access_token) {
+      showErr('Compte créé ! Vérifie ton email pour confirmer.', true);
+      btn.style.opacity = '1';
+      btn.textContent = 'Créer mon compte →';
+      return;
+    }
+
+    // Save session and redirect to app
+    localStorage.setItem('sn_token', data.access_token);
+    localStorage.setItem('sn_refresh', data.refresh_token);
+    localStorage.setItem('sn_user', JSON.stringify(data.user));
+    window.location.href = '/index.html';
+  } catch(e) {
+    showErr('Erreur réseau. Réessaie.');
+    btn.style.opacity = '1';
+    btn.textContent = currentTab === 'signup' ? 'Créer mon compte →' : 'Se connecter →';
+  }
+}
+
+async function handleForgot() {
+  const email = document.getElementById('email').value.trim();
+  if (!email) { showErr('Entre ton email d\'abord.'); return; }
+  try {
+    await fetch(`${SUPABASE_URL}/auth/v1/recover`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({ email })
+    });
+    showErr('Email de réinitialisation envoyé !', true);
+  } catch(e) { showErr('Erreur réseau.'); }
+}
+
+// If already logged in, redirect to app
+const token = localStorage.getItem('sn_token');
+if (token) {
+  fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
+  }).then(r => { if (r.ok) window.location.href = '/index.html'; }).catch(() => {});
+}
+
+// Initialize forgot visibility
+showTab('signup');
+</script>
+</body>
+</html>

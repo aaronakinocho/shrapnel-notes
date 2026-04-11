@@ -839,10 +839,7 @@ async function handleLogout() {
   localStorage.removeItem('sn_token');
   localStorage.removeItem('sn_refresh');
   localStorage.removeItem('sn_user');
-  // Reset state
-  ideas = []; fragments = {}; links = {}; refs = {};
-  researchNotes = []; aiAnalyses = {};
-  $('auth-screen').style.display = 'flex';
+  window.location.href = '/';
 }
 
 async function refreshToken() {
@@ -888,9 +885,9 @@ async function checkAuth() {
       }
     } catch(e) {}
   }
-  // Show auth screen
+  // Show landing page
   $('loading').classList.add('hidden');
-  $('auth-screen').style.display = 'flex';
+  window.location.href = '/';
   return false;
 }
 
