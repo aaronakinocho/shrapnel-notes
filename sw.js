@@ -1,4 +1,4 @@
-const CACHE = 'shrapnel-v14';
+const CACHE = 'shrapnel-v15';
 
 // Only cache static assets, never HTML pages
 const ASSETS = ['/manifest.json', '/icon-192.png', '/icon-512.png'];
