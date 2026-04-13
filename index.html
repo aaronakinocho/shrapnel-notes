@@ -30,6 +30,62 @@
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
+
+/* ===== THÈME ENCRE ===== */
+[data-theme="encre"] {
+  --sauge: #1C1C1C;
+  --sauge-dark: #111111;
+  --sauge-dim: #555555;
+  --sable: #F7F7F5;
+  --sable-mid: #E0E0E0;
+  --sable-dark: #B0B0B0;
+  --terracotta: #2E6FD8;
+  --terracotta-dark: #1A55B8;
+  --ink: #1C1C1C;
+  --ink-mid: #444444;
+  --ink-dim: #888888;
+  --white: #FFFFFF;
+  --green-text: #F7F7F5;
+}
+
+/* ===== THÈME VOLCAN ===== */
+[data-theme="volcan"] {
+  --sauge: #0D0D0D;
+  --sauge-dark: #080808;
+  --sauge-dim: #3A1500;
+  --sable: #0D0D0D;
+  --sable-mid: #2A0A00;
+  --sable-dark: #5A2A10;
+  --terracotta: #FF6B35;
+  --terracotta-dark: #E05020;
+  --ink: #FFD4B8;
+  --ink-mid: #C07050;
+  --ink-dim: #7A4020;
+  --white: #1A0A05;
+  --green-text: #FF6B35;
+}
+[data-theme="volcan"] #main { background: #0D0D0D; }
+[data-theme="volcan"] .draft-area,
+[data-theme="volcan"] .edit-area { background: #1A0A05; color: #FFD4B8; }
+[data-theme="volcan"] .ideas-wrap,
+[data-theme="volcan"] .stats-wrap { background: #0D0D0D; }
+
+/* ===== THÈME LILAS ===== */
+[data-theme="lilas"] {
+  --sauge: #5B4B8A;
+  --sauge-dark: #4A3A70;
+  --sauge-dim: #9B8AB0;
+  --sable: #F4F0F9;
+  --sable-mid: #DDD0EE;
+  --sable-dark: #C0B0D8;
+  --terracotta: #D4756B;
+  --terracotta-dark: #B85E55;
+  --ink: #2D1F4A;
+  --ink-mid: #5A4870;
+  --ink-dim: #9B8AB0;
+  --white: #FFFFFF;
+  --green-text: #F4F0F9;
+}
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; overflow: hidden; background: var(--sauge); color: var(--ink); -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; }
 * { font-family: 'DM Sans', system-ui, sans-serif; }
@@ -561,6 +617,31 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
         </div>
 
         <div>
+          <div class="section-label">Thème de l'app</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:4px;">
+            <button onclick="setTheme('foret')" class="theme-btn" id="theme-foret" title="Forêt" style="height:44px;border-radius:10px;border:2px solid transparent;background:#4A7C59;position:relative;overflow:hidden;">
+              <div style="position:absolute;bottom:0;left:0;right:0;height:40%;background:#F5EFE6;"></div>
+            </button>
+            <button onclick="setTheme('encre')" class="theme-btn" id="theme-encre" title="Encre" style="height:44px;border-radius:10px;border:2px solid transparent;background:#1C1C1C;position:relative;overflow:hidden;">
+              <div style="position:absolute;bottom:0;left:0;right:0;height:40%;background:#F7F7F5;"></div>
+              <div style="position:absolute;bottom:6px;right:6px;width:8px;height:8px;border-radius:50%;background:#2E6FD8;"></div>
+            </button>
+            <button onclick="setTheme('volcan')" class="theme-btn" id="theme-volcan" title="Volcan" style="height:44px;border-radius:10px;border:2px solid transparent;background:#0D0D0D;position:relative;overflow:hidden;">
+              <div style="position:absolute;bottom:0;left:0;right:0;height:40%;background:#1A0A05;"></div>
+              <div style="position:absolute;bottom:6px;right:6px;width:8px;height:8px;border-radius:50%;background:#FF6B35;"></div>
+            </button>
+            <button onclick="setTheme('lilas')" class="theme-btn" id="theme-lilas" title="Lilas" style="height:44px;border-radius:10px;border:2px solid transparent;background:#5B4B8A;position:relative;overflow:hidden;">
+              <div style="position:absolute;bottom:0;left:0;right:0;height:40%;background:#F4F0F9;"></div>
+              <div style="position:absolute;bottom:6px;right:6px;width:8px;height:8px;border-radius:50%;background:#D4756B;"></div>
+            </button>
+          </div>
+          <div style="display:flex;justify-content:space-around;margin-bottom:16px;">
+            <span style="font-size:10px;color:var(--ink-dim);text-align:center;flex:1;">Forêt</span>
+            <span style="font-size:10px;color:var(--ink-dim);text-align:center;flex:1;">Encre</span>
+            <span style="font-size:10px;color:var(--ink-dim);text-align:center;flex:1;">Volcan</span>
+            <span style="font-size:10px;color:var(--ink-dim);text-align:center;flex:1;">Lilas</span>
+          </div>
+
           <div class="section-label">Exporter le manuscrit</div>
           <div style="display:flex;gap:10px;">
             <button onclick="exportManuscript('pdf')" style="flex:1;padding:12px;background:var(--white);border:1px solid var(--sable-mid);border-radius:12px;font-size:13px;color:var(--ink-mid);text-align:center;">📄 PDF</button>
@@ -1188,7 +1269,32 @@ async function loadAll() {
   }
 }
 
-// ===== GRAPH VIEW =====
+// ===== THEMES =====
+const THEMES = ['foret', 'encre', 'volcan', 'lilas'];
+
+function setTheme(name) {
+  if (name === 'foret') {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', name);
+  }
+  localStorage.setItem('sn_theme', name);
+  updateThemeButtons(name);
+}
+
+function updateThemeButtons(name) {
+  THEMES.forEach(t => {
+    const btn = $('theme-' + t);
+    if (!btn) return;
+    btn.style.border = t === name ? '2px solid var(--terracotta)' : '2px solid transparent';
+    btn.style.boxShadow = t === name ? '0 0 0 2px var(--sable)' : 'none';
+  });
+}
+
+function loadTheme() {
+  const saved = localStorage.getItem('sn_theme') || 'foret';
+  setTheme(saved);
+}
 let graphSimulation = null;
 let currentGraphFilter = 'all';
 
@@ -2213,6 +2319,8 @@ const BADGES = [
 ];
 
 function renderStats() {
+  const saved = localStorage.getItem('sn_theme') || 'foret';
+  setTimeout(() => updateThemeButtons(saved), 50);
   const done = ideas.filter(i => i.done).length;
   const total = ideas.length;
   const allWords = Object.values(fragments).reduce((a, f) => a + cw(f.text || ''), 0);
@@ -2933,6 +3041,7 @@ if ('serviceWorker' in navigator) {
 
 // ===== INIT =====
 async function init() {
+  loadTheme();
   const authed = await checkAuth();
   if (authed) await loadAll();
 }
