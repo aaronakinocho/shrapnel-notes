@@ -742,26 +742,38 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 
     <!-- GRAPH VIEW -->
     <div id="v-graph" class="view">
-      <div style="padding:14px 18px 8px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="padding:14px 18px 8px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
         <div>
-          <div style="font-size:10px;color:var(--ink-dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:2px;">Vue graphe</div>
-          <div id="graph-subtitle" style="font-size:13px;color:var(--ink-dim);"></div>
+          <div style="font-size:10px;color:var(--ink-dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:2px;">Connexions</div>
+          <div id="graph-subtitle" style="font-size:12px;color:var(--ink-dim);"></div>
         </div>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink-dim);">
-            <div style="width:8px;height:8px;border-radius:50%;background:var(--sauge);"></div><span>validé + lié</span>
+        <div id="graph-legend" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--ink-dim);">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--sauge);"></div><span>lié</span>
           </div>
-          <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink-dim);">
+          <div style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--ink-dim);">
             <div style="width:8px;height:8px;border-radius:50%;background:#7FAF8A;"></div><span>validé</span>
           </div>
-          <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink-dim);">
+          <div style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--ink-dim);">
             <div style="width:8px;height:8px;border-radius:50%;background:var(--sable-mid);border:1.5px dashed #C8C4BE;"></div><span>en attente</span>
           </div>
         </div>
       </div>
+
+      <!-- Mobile list view -->
+      <div id="graph-list-view" style="display:none;flex:1;overflow-y:auto;padding:0 18px 16px;">
+        <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;" id="graph-filter-row">
+          <button class="filter-chip active" onclick="setGraphFilter(this,'all')">Tous</button>
+          <button class="filter-chip" onclick="setGraphFilter(this,'linked')">Liés</button>
+          <button class="filter-chip" onclick="setGraphFilter(this,'isolated')">Isolés</button>
+          <button class="filter-chip" onclick="setGraphFilter(this,'pending')">En attente</button>
+        </div>
+        <div id="graph-list"></div>
+      </div>
+
+      <!-- Desktop D3 view -->
       <div id="graph-container" style="flex:1;overflow:hidden;position:relative;">
         <svg id="graph-svg" style="width:100%;height:100%;"></svg>
-        <!-- Node tooltip card -->
         <div id="graph-tooltip" style="display:none;position:absolute;background:var(--white);border:1px solid var(--sable-mid);border-radius:14px;padding:14px;width:200px;z-index:100;">
           <div id="tt-tag" style="font-size:9px;color:var(--ink-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;"></div>
           <div id="tt-title" style="font-family:Georgia,serif;font-style:italic;font-size:14px;color:var(--ink);margin-bottom:8px;line-height:1.3;"></div>
@@ -1174,17 +1186,11 @@ async function loadAll() {
 
 // ===== GRAPH VIEW =====
 let graphSimulation = null;
-let graphInitialized = false;
+let currentGraphFilter = 'all';
+
+function isMobile() { return window.innerWidth < 768; }
 
 function initGraph() {
-  const container = $('graph-container');
-  const svg = $('graph-svg');
-  if (!container || !svg) return;
-
-  const W = container.clientWidth || window.innerWidth;
-  const H = container.clientHeight || 500;
-
-  // Build nodes and edges from current data
   const nodes = ideas.map(idea => {
     const frag = fragments[idea.id];
     const linkedCount = (links[idea.id] || []).length;
@@ -1212,20 +1218,98 @@ function initGraph() {
     });
   });
 
-  const total = nodes.length;
   const done = nodes.filter(n => n.done).length;
   const linked = new Set(edges.flatMap(e => [e.source, e.target])).size;
-  $('graph-subtitle').textContent = `${done} fragments rédigés · ${edges.length} connexions · ${linked} idées liées`;
+  $('graph-subtitle').textContent = `${done} rédigés · ${edges.length} connexions · ${linked} liés`;
 
-  // Load D3 if needed
-  if (!window.d3) {
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js';
-    script.onload = () => renderGraph(svg, W, H, nodes, edges);
-    document.head.appendChild(script);
+  if (isMobile()) {
+    $('graph-container').style.display = 'none';
+    $('graph-list-view').style.display = 'block';
+    renderGraphList(nodes, edges);
   } else {
-    renderGraph(svg, W, H, nodes, edges);
+    $('graph-container').style.display = 'block';
+    $('graph-list-view').style.display = 'none';
+    const svg = $('graph-svg');
+    const W = $('graph-container').clientWidth || window.innerWidth;
+    const H = $('graph-container').clientHeight || 500;
+    if (!window.d3) {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js';
+      script.onload = () => renderGraph(svg, W, H, nodes, edges);
+      document.head.appendChild(script);
+    } else {
+      renderGraph(svg, W, H, nodes, edges);
+    }
   }
+}
+
+function setGraphFilter(btn, filter) {
+  currentGraphFilter = filter;
+  document.querySelectorAll('#graph-filter-row .filter-chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // Re-render list with filter
+  const nodes = ideas.map(idea => ({
+    id: idea.id, title: idea.title, done: idea.done,
+    words: fragments[idea.id] ? cw(fragments[idea.id].text || '') : 0,
+    linkedCount: (links[idea.id] || []).length,
+  }));
+  const edges = [];
+  const seen = new Set();
+  Object.entries(links).forEach(([fromId, toIds]) => {
+    (toIds || []).forEach(toId => {
+      const key = [fromId, toId].sort().join('-');
+      if (!seen.has(key)) { seen.add(key); edges.push({ source: fromId, target: toId }); }
+    });
+  });
+  renderGraphList(nodes, edges);
+}
+
+function renderGraphList(nodes, edges) {
+  // Sort by link count desc, then done, then title
+  let sorted = [...nodes].sort((a, b) => b.linkedCount - a.linkedCount || b.done - a.done);
+
+  // Apply filter
+  if (currentGraphFilter === 'linked') sorted = sorted.filter(n => n.linkedCount > 0);
+  if (currentGraphFilter === 'isolated') sorted = sorted.filter(n => n.done && n.linkedCount === 0);
+  if (currentGraphFilter === 'pending') sorted = sorted.filter(n => !n.done);
+
+  if (!sorted.length) {
+    $('graph-list').innerHTML = '<div style="color:var(--ink-dim);font-size:13px;padding:20px 0;text-align:center;">Aucun fragment dans cette catégorie.</div>';
+    return;
+  }
+
+  $('graph-list').innerHTML = sorted.map(node => {
+    const idea = ideas.find(i => i.id === node.id);
+    if (!idea) return '';
+    const nodeLinks = (links[node.id] || []);
+    const linkedIdeas = nodeLinks.map(lid => ideas.find(i => i.id === lid)).filter(Boolean);
+
+    const dotColor = !node.done ? 'background:var(--sable-mid);border:1.5px dashed #C8C4BE;'
+      : node.linkedCount > 0 ? 'background:var(--sauge);'
+      : 'background:#7FAF8A;';
+
+    const linkChips = linkedIdeas.slice(0, 3).map(li =>
+      `<span onclick="event.stopPropagation();openReadView('${li.id}')" style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(74,124,89,0.1);color:var(--sauge);cursor:pointer;">↔ ${li.title.split(' ').slice(0,3).join(' ')}${li.title.split(' ').length > 3 ? '…' : ''}</span>`
+    ).join('');
+    const moreLinks = nodeLinks.length > 3 ? `<span style="font-size:10px;color:var(--ink-dim);">+${nodeLinks.length - 3}</span>` : '';
+
+    return `<div onclick="${node.done ? `openReadView('${node.id}')` : `openIdea('${node.id}')`}" style="background:var(--white);border:1px solid var(--sable-mid);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;${!node.done ? 'opacity:0.7;' : ''}">
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <div style="width:12px;height:12px;border-radius:50%;flex-shrink:0;margin-top:2px;${dotColor}"></div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:Georgia,serif;font-style:italic;font-size:14px;color:var(--ink);margin-bottom:6px;line-height:1.3;">${idea.title}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+            ${node.words > 0 ? `<span style="font-size:10px;color:var(--ink-dim);">${node.words} mots</span>` : ''}
+            ${!node.done ? `<span style="font-size:10px;color:var(--ink-dim);">en attente</span>` : ''}
+            ${linkChips}
+            ${moreLinks}
+            ${node.linkedCount === 0 && node.done ? `<span style="font-size:10px;color:#C8C4BE;">aucun lien</span>` : ''}
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--sable-mid);flex-shrink:0;">›</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function renderGraph(svgEl, W, H, nodes, edges) {
