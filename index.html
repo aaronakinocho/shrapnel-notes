@@ -349,6 +349,23 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   </div>
 </div>
 
+<!-- Recording overlay -->
+<div id="recording-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9998;align-items:flex-end;justify-content:center;">
+  <div style="background:var(--sable);border-radius:24px 24px 0 0;padding:28px 24px 40px;width:100%;max-width:500px;text-align:center;">
+    <div style="width:40px;height:4px;background:var(--sable-mid);border-radius:2px;margin:0 auto 24px;"></div>
+    <div id="rec-status" style="font-size:13px;color:var(--ink-dim);margin-bottom:20px;font-family:'DM Sans',sans-serif;">Appuie pour commencer</div>
+    <div id="rec-btn" onclick="onRecBtnClick()" style="width:72px;height:72px;border-radius:50%;background:var(--sauge);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;cursor:pointer;transition:transform 0.15s;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="12" rx="3" fill="#F0F7F2"/><path d="M5 11a7 7 0 0 0 14 0" stroke="#F0F7F2" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="18" x2="12" y2="22" stroke="#F0F7F2" stroke-width="1.5" stroke-linecap="round"/><line x1="8" y1="22" x2="16" y2="22" stroke="#F0F7F2" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </div>
+    <div id="rec-timer" style="font-family:'DM Mono',monospace;font-size:22px;color:var(--ink);margin-bottom:8px;">0:00</div>
+    <div id="rec-hint" style="font-size:12px;color:var(--ink-dim);margin-bottom:24px;">Parle en français — Whisper transcrit automatiquement</div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="cancelRecording()" style="flex:1;padding:12px;border:1px solid var(--sable-mid);border-radius:10px;font-size:14px;color:var(--ink-dim);background:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;">Annuler</button>
+      <button id="rec-stop-btn" onclick="stopAndTranscribe()" style="flex:2;padding:12px;background:var(--terracotta);color:#fff;border-radius:10px;font-size:14px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;display:none;">Arrêter et transcrire</button>
+    </div>
+  </div>
+</div>
+
 <!-- Welcome / onboarding screen -->
 <div id="welcome-screen" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:10001;align-items:flex-end;justify-content:center;padding-bottom:var(--safe-bottom);">
   <div style="background:var(--sable);border-radius:24px 24px 0 0;padding:28px 24px 32px;width:100%;max-width:500px;">
@@ -446,6 +463,9 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
         </div>
         <div class="empty-label" id="empty-label">Prêt à écrire ?</div>
         <button class="btn-pick" id="btn-pick" onclick="pickRandom()">Piocher une idée au hasard</button>
+        <button id="btn-mic-home" onclick="toggleRecording('home')" style="display:flex;align-items:center;gap:8px;padding:12px 24px;border:1px solid var(--sable-mid);border-radius:12px;font-size:14px;color:var(--ink-dim);background:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;">
+          🎙️ <span>Dicter un fragment</span>
+        </button>
       </div>
 
       <div id="editor" class="editor" style="display:none">
@@ -496,6 +516,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
           <button class="btn-save" id="btn-save" onclick="saveDraft()">Sauvegarder</button>
           <button class="btn-validate" onclick="validateFragment()">Valider →</button>
           <button class="btn-skip" title="Piocher une autre idée" onclick="resetAndPick()">↺ Autre</button>
+          <button id="btn-mic" title="Dicter" onclick="toggleRecording('draft')" style="padding:12px 14px;border:1px solid var(--sable-mid);border-radius:10px;font-size:16px;color:var(--ink-dim);transition:all 0.15s;flex-shrink:0;">🎙️</button>
         </div>
       </div>
     </div>
@@ -1111,7 +1132,187 @@ async function loadAll() {
   }
 }
 
-// ===== ONBOARDING =====
+// ===== VOICE RECORDING =====
+let mediaRecorder = null;
+let audioChunks = [];
+let recordingTimer = null;
+let recordingSeconds = 0;
+let recordingContext = null; // 'draft' | 'home'
+let isRecording = false;
+
+function toggleRecording(context) {
+  if (isRecording) {
+    stopAndTranscribe();
+  } else {
+    startRecording(context);
+  }
+}
+
+async function startRecording(context) {
+  recordingContext = context;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioChunks = [];
+    recordingSeconds = 0;
+
+    // Choose best supported format
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
+      : MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4'
+      : 'audio/ogg';
+
+    mediaRecorder = new MediaRecorder(stream, { mimeType });
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.start(100);
+    isRecording = true;
+
+    // Show overlay
+    const overlay = $('recording-overlay');
+    overlay.style.display = 'flex';
+    $('rec-status').textContent = 'Enregistrement en cours…';
+    $('rec-btn').style.background = '#e05555';
+    $('rec-btn').innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="#F0F7F2"/></svg>';
+    $('rec-stop-btn').style.display = 'block';
+    $('rec-hint').textContent = 'Parle librement. Appuie sur Arrêter quand tu as fini.';
+
+    // Update mic button state
+    const micBtn = $(context === 'draft' ? 'btn-mic' : 'btn-mic-home');
+    if (micBtn) { micBtn.style.background = 'rgba(224,85,85,0.1)'; micBtn.style.color = '#e05555'; }
+
+    // Timer
+    recordingTimer = setInterval(() => {
+      recordingSeconds++;
+      const m = Math.floor(recordingSeconds / 60);
+      const s = recordingSeconds % 60;
+      $('rec-timer').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+      // Max 5 minutes
+      if (recordingSeconds >= 300) stopAndTranscribe();
+    }, 1000);
+
+  } catch(e) {
+    notify('Micro non disponible. Autorise l\'accès au micro dans les réglages.');
+  }
+}
+
+function onRecBtnClick() {
+  if (isRecording) stopAndTranscribe();
+  else startRecording(recordingContext || 'home');
+}
+
+function cancelRecording() {
+  if (mediaRecorder && isRecording) {
+    mediaRecorder.stream.getTracks().forEach(t => t.stop());
+    mediaRecorder = null;
+  }
+  clearInterval(recordingTimer);
+  isRecording = false;
+  audioChunks = [];
+  closeRecordingOverlay();
+}
+
+function closeRecordingOverlay() {
+  $('recording-overlay').style.display = 'none';
+  $('rec-timer').textContent = '0:00';
+  $('rec-status').textContent = 'Appuie pour commencer';
+  $('rec-btn').style.background = 'var(--sauge)';
+  $('rec-btn').innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="12" rx="3" fill="#F0F7F2"/><path d="M5 11a7 7 0 0 0 14 0" stroke="#F0F7F2" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="18" x2="12" y2="22" stroke="#F0F7F2" stroke-width="1.5" stroke-linecap="round"/><line x1="8" y1="22" x2="16" y2="22" stroke="#F0F7F2" stroke-width="1.5" stroke-linecap="round"/></svg>';
+  $('rec-stop-btn').style.display = 'none';
+  // Reset mic buttons
+  const micDraft = $('btn-mic');
+  if (micDraft) { micDraft.style.background = ''; micDraft.style.color = ''; }
+  const micHome = $('btn-mic-home');
+  if (micHome) { micHome.style.background = ''; micHome.style.color = ''; }
+}
+
+async function stopAndTranscribe() {
+  if (!mediaRecorder || !isRecording) return;
+  clearInterval(recordingTimer);
+  isRecording = false;
+
+  $('rec-status').textContent = 'Transcription en cours…';
+  $('rec-btn').style.background = 'var(--sauge-dim)';
+  $('rec-stop-btn').style.display = 'none';
+
+  // Stop recording
+  await new Promise(resolve => {
+    mediaRecorder.onstop = resolve;
+    mediaRecorder.stop();
+    mediaRecorder.stream.getTracks().forEach(t => t.stop());
+  });
+
+  if (!audioChunks.length) { closeRecordingOverlay(); notify('Aucun audio capturé.'); return; }
+
+  try {
+    const mimeType = mediaRecorder.mimeType || 'audio/webm';
+    const ext = mimeType.includes('mp4') ? 'mp4' : mimeType.includes('ogg') ? 'ogg' : 'webm';
+    const blob = new Blob(audioChunks, { type: mimeType });
+
+    const formData = new FormData();
+    formData.append('file', blob, `audio.${ext}`);
+    formData.append('model', 'whisper-1');
+    formData.append('language', 'fr');
+
+    const response = await fetch('/api/transcribe', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) throw new Error(await response.text());
+    const data = await response.json();
+    const text = data.text?.trim();
+
+    if (!text) { closeRecordingOverlay(); notify('Transcription vide. Réessaie.'); return; }
+
+    closeRecordingOverlay();
+    insertTranscription(text);
+    notify('Transcription terminée ✓');
+
+  } catch(e) {
+    console.error(e);
+    closeRecordingOverlay();
+    notify('Erreur de transcription. Réessaie.');
+  }
+}
+
+function insertTranscription(text) {
+  if (recordingContext === 'draft' && currentId) {
+    // Insert at end of current draft
+    const editor = $('draft-editor');
+    if (editor) {
+      const current = editor.innerHTML;
+      const separator = current && !current.endsWith('<br>') ? '<br>' : '';
+      editor.innerHTML = current + separator + text;
+      onDraftInput();
+      editor.focus();
+    }
+  } else {
+    // Create new fragment from voice — open a dialog to name it
+    openVoiceFragment(text);
+  }
+}
+
+function openVoiceFragment(transcribedText) {
+  // Show a quick title input then create the fragment
+  const title = prompt('Titre pour ce fragment vocal :', 'Fragment vocal — ' + new Date().toLocaleDateString('fr-FR'));
+  if (!title) return;
+  createVoiceIdea(title, transcribedText);
+}
+
+async function createVoiceIdea(title, text) {
+  try {
+    const res = await db.post('ideas', [{ title, done: false, position: ideas.length, user_id: uid() }]);
+    const idea = res[0];
+    ideas.push(idea);
+    // Create fragment with transcribed text
+    const fragRes = await db.post('fragments', { idea_id: idea.id, text, user_id: uid() });
+    fragments[idea.id] = fragRes[0];
+    updateEmptyState();
+    // Open the idea for editing
+    await openIdea(idea.id);
+    notify('Fragment vocal créé ✓');
+  } catch(e) { notify('Erreur lors de la création.'); }
+}
 const EXAMPLE_IDEAS = [
   'Ce que j\'ai appris de mes plus grandes erreurs',
   'Pourquoi la lenteur est une forme d\'intelligence',
