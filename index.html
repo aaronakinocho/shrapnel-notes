@@ -912,7 +912,7 @@ async function handleLogout() {
   localStorage.removeItem('sn_token');
   localStorage.removeItem('sn_refresh');
   localStorage.removeItem('sn_user');
-  window.location.href = '/';
+  window.location.href = '/landing.html';
 }
 
 async function refreshToken() {
@@ -960,7 +960,7 @@ async function checkAuth() {
   }
   // Show landing page
   $('loading').classList.add('hidden');
-  window.location.href = '/';
+  window.location.href = '/landing.html';
   return false;
 }
 

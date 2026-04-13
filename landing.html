@@ -222,7 +222,7 @@ async function handleAuth() {
     localStorage.setItem('sn_token', data.access_token);
     localStorage.setItem('sn_refresh', data.refresh_token);
     localStorage.setItem('sn_user', JSON.stringify(data.user));
-    window.location.href = '/index.html';
+    window.location.href = '/app';
   } catch(e) {
     showErr('Erreur réseau. Réessaie.');
     btn.style.opacity = '1';
@@ -248,7 +248,7 @@ const token = localStorage.getItem('sn_token');
 if (token) {
   fetch(`${SUPABASE_URL}/auth/v1/user`, {
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
-  }).then(r => { if (r.ok) window.location.href = '/index.html'; }).catch(() => {});
+  }).then(r => { if (r.ok) window.location.href = '/app'; }).catch(() => {});
 }
 
 // Initialize forgot visibility

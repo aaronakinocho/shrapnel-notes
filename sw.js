@@ -1,5 +1,7 @@
-const CACHE = 'shrapnel-v13b';
-const ASSETS = ['/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png'];
+const CACHE = 'shrapnel-v14';
+
+// Only cache static assets, never HTML pages
+const ASSETS = ['/manifest.json', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
@@ -17,16 +19,22 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Laisse passer les navigations vers / et landing.html directement au réseau
-  if (e.request.mode === 'navigate' && (url.pathname === '/' || url.pathname === '/landing.html')) {
+  // Never intercept HTML navigation — let the network handle routing
+  if (e.request.mode === 'navigate') {
     e.respondWith(fetch(e.request));
     return;
   }
 
-  // Pour tout le reste : cache d'abord, puis réseau
-  e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match('/index.html')))
-  );
+  // Cache static assets only
+  if (ASSETS.some(a => url.pathname === a)) {
+    e.respondWith(
+      caches.match(e.request).then(r => r || fetch(e.request))
+    );
+    return;
+  }
+
+  // Everything else goes straight to network
+  e.respondWith(fetch(e.request));
 });
 
 self.addEventListener('message', e => {
