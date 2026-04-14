@@ -958,7 +958,57 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   </div>
 </div>
 
-<div id="notif"></div>
+<!-- Writing assistant invite (post-validation) -->
+<div id="wa-invite" style="display:none;position:fixed;bottom:calc(var(--safe-bottom) + 70px);left:50%;transform:translateX(-50%);background:var(--ink);border-radius:16px;padding:14px 18px;z-index:8000;width:calc(100% - 40px);max-width:420px;box-shadow:0 4px 24px rgba(0,0,0,0.2);">
+  <div style="font-size:13px;color:var(--green-text);margin-bottom:12px;font-family:Georgia,serif;font-style:italic;">Fragment validé ✓ — veux-tu un retour sur ce texte ?</div>
+  <div style="display:flex;gap:8px;">
+    <button onclick="openWritingAssistant()" style="flex:2;padding:10px;background:var(--terracotta);color:#fff;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;">Analyser →</button>
+    <button onclick="closeWAInvite()" style="flex:1;padding:10px;border:1px solid rgba(240,247,242,0.2);border-radius:10px;font-size:13px;color:rgba(240,247,242,0.6);cursor:pointer;">Plus tard</button>
+  </div>
+</div>
+
+<!-- Writing assistant panel -->
+<div id="wa-panel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:8500;align-items:flex-end;justify-content:center;">
+  <div style="background:var(--sable);border-radius:24px 24px 0 0;padding:24px 20px 36px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;">
+    <div style="width:40px;height:4px;background:var(--sable-mid);border-radius:2px;margin:0 auto 20px;"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div style="font-family:Georgia,serif;font-size:18px;color:var(--ink);">Assistant d'écriture</div>
+      <button onclick="closeWAPanel()" style="font-size:20px;color:var(--ink-dim);padding:0 4px;cursor:pointer;">×</button>
+    </div>
+
+    <!-- Focus selector -->
+    <div id="wa-focus-section">
+      <div style="font-size:10px;color:var(--ink-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">Sur quoi veux-tu du feedback ?</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;" id="wa-focus-row">
+        <button class="ref-type-btn" onclick="toggleWAFocus(this,'Structure')">Structure</button>
+        <button class="ref-type-btn" onclick="toggleWAFocus(this,'Style')">Style</button>
+        <button class="ref-type-btn" onclick="toggleWAFocus(this,'Accroche')">Accroche</button>
+        <button class="ref-type-btn" onclick="toggleWAFocus(this,'Argument')">Argument</button>
+        <button class="ref-type-btn" onclick="toggleWAFocus(this,'Rythme')">Rythme</button>
+      </div>
+      <div style="font-size:10px;color:var(--ink-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">Ce sur quoi tu doutes (optionnel)</div>
+      <textarea id="wa-doubt" placeholder="Ex : je pense que l'introduction est trop longue…" style="width:100%;min-height:70px;padding:10px 14px;font-size:13px;background:var(--white);border:1px solid var(--sable-mid);border-radius:10px;color:var(--ink);resize:none;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:14px;"></textarea>
+      <button onclick="runWritingAnalysis()" style="width:100%;padding:13px;background:var(--sauge);color:#fff;border-radius:12px;font-size:14px;font-weight:500;cursor:pointer;">✦ Analyser ce fragment</button>
+    </div>
+
+    <!-- Loading -->
+    <div id="wa-loading" style="display:none;padding:20px 0;text-align:center;font-size:13px;color:var(--ink-dim);font-family:'DM Sans',sans-serif;">
+      <span style="animation:pulse 1.5s ease infinite;">✦</span> Analyse en cours…
+    </div>
+
+    <!-- Result -->
+    <div id="wa-result" style="display:none;">
+      <div id="wa-result-content" style="font-family:Georgia,serif;font-size:14px;color:var(--ink-mid);line-height:1.85;margin-bottom:16px;"></div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="resetWAPanel()" style="flex:1;padding:11px;border:1px solid var(--sable-mid);border-radius:10px;font-size:13px;color:var(--ink-dim);cursor:pointer;">Nouvelle analyse</button>
+        <button onclick="closeWAPanel()" style="flex:1;padding:11px;background:var(--sauge);color:#fff;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;">Fermer</button>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div id="wa-history" style="margin-top:20px;display:flex;flex-direction:column;gap:8px;"></div>
+  </div>
+</div>
 
 <!-- Format bubble — global, fonctionne dans écriture ET édition -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1539,6 +1589,157 @@ function renderChronoInIdeas() {
   }
   el.innerHTML = chronoList.map((idea, i) => ideaRowHTML(idea, i+1, true)).join('');
 }
+
+// ===== ASSISTANT D'ÉCRITURE =====
+let waIdeaId = null;
+let waFocus = new Set();
+let writingAnalyses = {};
+
+function showWAInvite(ideaId) {
+  waIdeaId = ideaId;
+  const inv = $('wa-invite');
+  inv.style.display = 'block';
+  setTimeout(() => { if (inv.style.display !== 'none') inv.style.display = 'none'; }, 12000);
+}
+
+function closeWAInvite() {
+  $('wa-invite').style.display = 'none';
+}
+
+function openWritingAssistant() {
+  closeWAInvite();
+  resetWAPanel();
+  $('wa-panel').style.display = 'flex';
+  loadWAHistory();
+}
+
+function closeWAPanel() {
+  $('wa-panel').style.display = 'none';
+}
+
+function resetWAPanel() {
+  $('wa-focus-section').style.display = 'block';
+  $('wa-loading').style.display = 'none';
+  $('wa-result').style.display = 'none';
+  $('wa-doubt').value = '';
+  waFocus = new Set();
+  document.querySelectorAll('#wa-focus-row .ref-type-btn').forEach(b => b.classList.remove('active'));
+}
+
+function toggleWAFocus(btn, value) {
+  if (waFocus.has(value)) { waFocus.delete(value); btn.classList.remove('active'); }
+  else { waFocus.add(value); btn.classList.add('active'); }
+}
+
+async function loadWAHistory() {
+  if (!waIdeaId) return;
+  if (!writingAnalyses[waIdeaId]) {
+    try {
+      const data = await db.get('writing_analyses', { select: '*', filter: `idea_id=eq.${waIdeaId}`, order: 'created_at.desc' });
+      writingAnalyses[waIdeaId] = data || [];
+    } catch(e) { writingAnalyses[waIdeaId] = []; }
+  }
+  renderWAHistory();
+}
+
+function renderWAHistory() {
+  const el = $('wa-history');
+  const analyses = writingAnalyses[waIdeaId] || [];
+  if (!analyses.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div style="font-size:10px;color:var(--ink-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">Analyses précédentes</div>` +
+    analyses.map((a, i) => {
+      const d = new Date(a.created_at);
+      const dateStr = d.toLocaleDateString('fr-FR', { day:'2-digit', month:'short' });
+      const timeStr = d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+      const formatted = a.content.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>');
+      const focusLabel = a.focus && a.focus !== 'général' ? `<span style="font-size:9px;padding:1px 7px;border-radius:8px;background:rgba(74,124,89,0.1);color:var(--sauge);">${a.focus}</span>` : '';
+      return `<div style="background:var(--white);border:1px solid var(--sable-mid);border-radius:12px;overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;cursor:pointer;" onclick="toggleWAAnalysis('wa-body-${a.id}','wa-chev-${a.id}')">
+          <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:10px;color:var(--ink-dim);">${dateStr} ${timeStr}</span>${focusLabel}</div>
+          <span id="wa-chev-${a.id}" style="font-size:11px;color:var(--ink-dim);">${i === 0 ? '▲' : '▶'}</span>
+        </div>
+        <div id="wa-body-${a.id}" style="display:${i === 0 ? 'block' : 'none'};padding:0 12px 12px;font-family:Georgia,serif;font-size:13px;color:var(--ink-mid);line-height:1.8;">${formatted}</div>
+      </div>`;
+    }).join('');
+}
+
+function toggleWAAnalysis(bodyId, chevId) {
+  const body = $(bodyId), chev = $(chevId);
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (chev) chev.textContent = open ? '▶' : '▲';
+}
+
+async function runWritingAnalysis() {
+  if (!waIdeaId) return;
+  const idea = ideas.find(i => i.id === waIdeaId);
+  const frag = fragments[waIdeaId];
+  if (!idea || !frag?.text) return;
+
+  $('wa-focus-section').style.display = 'none';
+  $('wa-loading').style.display = 'block';
+
+  const div = document.createElement('div');
+  div.innerHTML = frag.text;
+  const plainText = div.innerText || '';
+  const focusStr = waFocus.size > 0 ? Array.from(waFocus).join(', ') : 'général';
+  const doubtStr = $('wa-doubt').value.trim();
+
+  const projectCtx = currentProject
+    ? `Genre : ${currentProject.genre || 'non précisé'}\nTon visé : ${currentProject.tone || 'non précisé'}\nLecteur cible : ${currentProject.audience || 'non précisé'}\nIntention : ${currentProject.intention || 'non précisé'}`
+    : 'Aucun profil de projet défini.';
+
+  const prompt = `Tu es un éditeur littéraire francophone. Tu lis un fragment d'un projet d'écriture et tu donnes un retour direct, précis et utile à l'auteur.
+
+CONTEXTE DU PROJET :
+${projectCtx}
+
+TITRE DU FRAGMENT : ${idea.title}
+
+TEXTE (${plainText.split(/\s+/).filter(w=>w).length} mots) :
+${plainText}
+
+FOCUS DE L'AUTEUR : ${focusStr}
+${doubtStr ? `CE SUR QUOI IL DOUTE : ${doubtStr}` : ''}
+
+Donne un retour structuré en exactement trois points :
+
+**1. Ce qui fonctionne**
+Cite précisément ce qui est réussi. Nomme des formulations spécifiques du texte.
+
+**2. Ce qui accroche ou ralentit**
+Identifie le principal point de friction. Explique pourquoi. Sois direct.
+
+**3. Une suggestion concrète**
+Une seule action que l'auteur peut faire maintenant. Pas un conseil générique.
+
+Réponds en français. Maximum 200 mots. Tutoie l'auteur.`;
+
+  try {
+    const response = await fetch('/api/analyse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 600, messages: [{ role: 'user', content: prompt }] })
+    });
+    if (!response.ok) throw new Error(await response.text());
+    const data = await response.json();
+    const content = data.content[0].text;
+    const res = await db.post('writing_analyses', { idea_id: waIdeaId, content, focus: focusStr, doubt: doubtStr, user_id: uid() });
+    if (!writingAnalyses[waIdeaId]) writingAnalyses[waIdeaId] = [];
+    writingAnalyses[waIdeaId].unshift(res[0]);
+    $('wa-loading').style.display = 'none';
+    $('wa-result').style.display = 'block';
+    $('wa-result-content').innerHTML = content.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>');
+    renderWAHistory();
+  } catch(e) {
+    console.error(e);
+    $('wa-loading').style.display = 'none';
+    $('wa-focus-section').style.display = 'block';
+    notify('Erreur lors de l\'analyse. Réessaie.');
+  }
+}
+
 const THEMES = ['foret', 'encre', 'volcan', 'lilas'];
 
 function setTheme(name) {
@@ -2156,11 +2357,13 @@ async function validateFragment() {
     await recordActivity();
     const m = Math.floor(writingTime / 60), s = writingTime % 60;
     notify(`Fragment validé ✓ — rédigé en ${m}:${s.toString().padStart(2,'0')}`);
+    const validatedId = currentId;
     currentId = null;
     resetTimer();
     $('editor').style.display = 'none';
     $('write-empty').style.display = '';
     updateEmptyState();
+    setTimeout(() => showWAInvite(validatedId), 800);
   } catch(e) { notify('Erreur lors de la validation'); }
 }
 
