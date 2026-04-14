@@ -126,7 +126,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 /* ===== VIEWS ===== */
 .view { display: none; min-height: 100%; overflow-y: auto; }
 .view.active { display: block; }
-#v-write { display: none; flex-direction: column; min-height: 100%; }
+#v-write { display: none; flex-direction: column; }
 #v-write.active { display: flex; }
 #v-graph { display: none; flex-direction: column; height: calc(100vh - 120px); }
 #v-graph.active { display: flex; }
@@ -513,7 +513,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   <div id="main">
 
     <!-- WRITE -->
-    <div id="v-write" class="view active">
+    <div id="v-write" class="view">
       <div id="write-empty" class="write-empty">
         <div class="empty-glyph">
           <svg width="52" height="52" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1038,7 +1038,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 
   <!-- Navbar -->
   <div id="navbar">
-    <button class="nav-item" onclick="switchView('projects',this)">
+    <button class="nav-item active" onclick="switchView('projects',this)">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="13" y="3" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="2" y="14" width="9" height="7" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="13" y="14" width="9" height="7" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
       <span>Projets</span>
     </button>
@@ -3409,7 +3409,10 @@ if ('serviceWorker' in navigator) {
 async function init() {
   loadTheme();
   const authed = await checkAuth();
-  if (authed) await loadAll();
+  if (authed) {
+    await loadAll();
+    switchView('projects', document.querySelector('#navbar .nav-item'));
+  }
 }
 init();
 </script>
