@@ -761,8 +761,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
       </div>
     </div>
 
-    <!-- STATS (gardé pour compatibilité interne, masqué de la navbar) -->
-    <div id="v-stats" class="view" style="display:none !important;"></div>
+
         <div class="streak-card">
           <div class="streak-fire">🔥</div>
           <div>
@@ -2704,26 +2703,10 @@ function renderStats() {
   const allRefs = Object.values(refs).reduce((a, r) => a + r.length, 0);
   const pct = total ? Math.round(done / total * 100) : 0;
 
-  $('streak-val').textContent = streak;
-  $('best-streak').textContent = bestStreak;
-  $('s-total').textContent = total;
-  $('s-done').textContent = done;
-  $('s-pct').textContent = pct + '% du livre';
-  $('s-remaining').textContent = total - done;
-  $('s-remaining-sub').textContent = total > 0 ? `${100 - pct}% restant` : '';
-  $('s-words').textContent = fmt(allWords);
-  $('s-pages').textContent = `~${Math.round(allWords / 275)} pages`;
-  $('s-refs').textContent = allRefs;
+  const safe = (id, val) => { const el = $(id); if (el) el.textContent = val; };
 
-  // Average writing time
-  const timedFrags = Object.values(fragments).filter(f => f.writing_time > 0);
-  if (timedFrags.length) {
-    const avgSec = Math.round(timedFrags.reduce((a, f) => a + f.writing_time, 0) / timedFrags.length);
-    const am = Math.floor(avgSec / 60), as2 = avgSec % 60;
-    $('s-avgtime').textContent = `${am}:${as2.toString().padStart(2,'0')}`;
-  } else {
-    $('s-avgtime').textContent = '—';
-  }
+  safe('streak-val', streak);
+  safe('best-streak', bestStreak);
 
   // Weekly challenge
   const weekGoal = 5;
@@ -2731,11 +2714,13 @@ function renderStats() {
   const weekDone = Object.entries(activityDays)
     .filter(([d]) => (now - new Date(d)) < 7 * 86400000)
     .reduce((a, [, v]) => a + v, 0);
-  $('challenge-fill').style.width = Math.min(weekDone / weekGoal * 100, 100) + '%';
-  $('challenge-label').textContent = `${Math.min(weekDone, weekGoal)} / ${weekGoal} accomplis`;
+  const fill = $('challenge-fill');
+  if (fill) fill.style.width = Math.min(weekDone / weekGoal * 100, 100) + '%';
+  safe('challenge-label', `${Math.min(weekDone, weekGoal)} / ${weekGoal} accomplis`);
 
   // Badges
-  $('badges-grid').innerHTML = BADGES.map(b => {
+  const badgesGrid = $('badges-grid');
+  if (badgesGrid) badgesGrid.innerHTML = BADGES.map(b => {
     const earned = b.cond();
     return `<div class="badge ${earned ? 'earned' : ''}">
       <div class="badge-icon ${earned ? '' : 'badge-locked'}">${b.icon}</div>
@@ -2745,13 +2730,15 @@ function renderStats() {
 
   // Calendar
   const cal = $('cal-grid');
-  cal.innerHTML = '';
-  for (let i = 27; i >= 0; i--) {
-    const d = new Date(now.getTime() - i * 86400000).toISOString().split('T')[0];
-    const dot = document.createElement('div');
-    dot.className = 'cal-dot' + (activityDays[d] ? ' has' : '') + (d === today() ? ' today' : '');
-    dot.title = d;
-    cal.appendChild(dot);
+  if (cal) {
+    cal.innerHTML = '';
+    for (let i = 27; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 86400000).toISOString().split('T')[0];
+      const dot = document.createElement('div');
+      dot.className = 'cal-dot' + (activityDays[d] ? ' has' : '') + (d === today() ? ' today' : '');
+      dot.title = d;
+      cal.appendChild(dot);
+    }
   }
 }
 
