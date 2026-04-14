@@ -96,7 +96,9 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 ::-webkit-scrollbar-thumb { background: var(--sable-dark); border-radius: 1px; }
 
 /* ===== LAYOUT ===== */
-#app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+#app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
+#topbar { flex-shrink: 0; }
+#navbar { flex-shrink: 0; }
 
 #topbar {
   background: var(--sauge);
@@ -108,7 +110,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .brand-name { color: var(--green-text); font-size: 15px; font-weight: 500; letter-spacing: 0.02em; }
 .streak-pill { font-size: 11px; color: var(--green-text); background: rgba(240,247,242,0.15); border: 1px solid rgba(240,247,242,0.28); padding: 3px 10px; border-radius: 20px; }
 
-#main { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--sable); }
+#main { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--sable); min-height: 0; }
 
 #navbar {
   background: var(--sauge);
@@ -122,7 +124,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .nav-item svg { flex-shrink: 0; }
 
 /* ===== VIEWS ===== */
-.view { display: none; min-height: 100%; }
+.view { display: none; min-height: 100%; overflow-y: auto; }
 .view.active { display: block; }
 #v-write { display: none; flex-direction: column; min-height: 100%; }
 #v-write.active { display: flex; }
