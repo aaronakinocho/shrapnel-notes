@@ -110,7 +110,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .brand-name { color: var(--green-text); font-size: 15px; font-weight: 500; letter-spacing: 0.02em; }
 .streak-pill { font-size: 11px; color: var(--green-text); background: rgba(240,247,242,0.15); border: 1px solid rgba(240,247,242,0.28); padding: 3px 10px; border-radius: 20px; }
 
-#main { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--sable); min-height: 0; }
+#main { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--sable); min-height: 0; display: flex; flex-direction: column; }
 
 #navbar {
   background: var(--sauge);
@@ -124,7 +124,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .nav-item svg { flex-shrink: 0; }
 
 /* ===== VIEWS ===== */
-.view { display: none; min-height: 100%; overflow-y: auto; }
+.view { display: none; }
 .view.active { display: block; }
 #v-write { display: none; flex-direction: column; }
 #v-write.active { display: flex; }
@@ -584,7 +584,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 
     <!-- STATS -->
     <!-- PROJECTS -->
-    <div id="v-projects" class="view">
+    <div id="v-projects" class="view" style="overflow-y:auto;">
       <div class="stats-wrap">
 
         <!-- Active project card -->
