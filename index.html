@@ -504,7 +504,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
       <span class="brand-name">Shrapnel Notes</span>
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
-      <div class="streak-pill" id="top-streak"></div>
+
       <button onclick="handleLogout()" style="font-size:11px;color:rgba(240,247,242,0.5);background:none;border:none;cursor:pointer;padding:2px;" title="Se déconnecter">⎋</button>
     </div>
   </div>
@@ -618,28 +618,6 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
             </div>
           </div>
 
-          <!-- Stats, streak, badges, export fusionnés ici -->
-          <div class="streak-card">
-            <div class="streak-fire">🔥</div>
-            <div>
-              <div class="streak-val" id="streak-val">0</div>
-              <div class="streak-label">jours consécutifs</div>
-            </div>
-            <div class="streak-best">
-              <div class="streak-best-label">meilleur</div>
-              <div class="streak-best-val" id="best-streak">0</div>
-            </div>
-          </div>
-
-          <div>
-            <div class="section-label">Défi de la semaine</div>
-            <div class="challenge-card">
-              <div class="challenge-title" id="challenge-title">Valider 5 fragments cette semaine</div>
-              <div class="challenge-track"><div class="challenge-fill" id="challenge-fill" style="width:0%"></div></div>
-              <div class="challenge-label" id="challenge-label">0 / 5</div>
-            </div>
-          </div>
-
           <div>
             <div class="section-label">Thème de l'app</div>
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:4px;">
@@ -664,15 +642,6 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
             </div>
           </div>
 
-          <div>
-            <div class="section-label">Badges</div>
-            <div class="badges-grid" id="badges-grid"></div>
-          </div>
-
-          <div>
-            <div class="section-label">Activité — 28 derniers jours</div>
-            <div class="cal-grid" id="cal-grid"></div>
-          </div>
         </div>
 
         <!-- Other projects -->
@@ -958,11 +927,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 
   <!-- Navbar -->
   <div id="navbar">
-    <button class="nav-item active" onclick="switchView('projects',this)">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="13" y="3" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="2" y="14" width="9" height="7" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="13" y="14" width="9" height="7" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
-      <span>Projets</span>
-    </button>
-    <button class="nav-item" onclick="switchView('write',this)">
+    <button class="nav-item active" onclick="switchView('write',this)">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polyline points="5,19 8,14 12,16 16,8 19,5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="8" x2="19" y2="5" stroke="var(--terracotta)" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="16" r="1.2" fill="var(--terracotta)"/></svg>
       <span>Écrire</span>
     </button>
@@ -973,6 +938,10 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
     <button class="nav-item" onclick="switchView('research',this)">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="10" height="14" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><line x1="7" y1="7" x2="11" y2="7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="7" y1="10" x2="11" y2="10" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><circle cx="17" cy="17" r="3" stroke="currentColor" stroke-width="1.3" fill="none"/><line x1="19.5" y1="19.5" x2="22" y2="22" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
       <span>Recherche</span>
+    </button>
+    <button class="nav-item" onclick="switchView('projects',this)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="13" y="3" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="2" y="14" width="9" height="7" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="13" y="14" width="9" height="7" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+      <span>Projets</span>
     </button>
   </div>
 </div>
@@ -1341,7 +1310,6 @@ async function loadAll() {
     activityDays = {};
     (actData || []).forEach(a => activityDays[a.day] = a.count);
     computeStreak();
-    updateTopStreak();
     updateEmptyState();
     $('loading').classList.add('hidden');
 
@@ -2186,7 +2154,6 @@ async function validateFragment() {
     await db.patch('ideas', `id=eq.${currentId}`, { done: true });
     ideas = ideas.map(i => i.id === currentId ? { ...i, done: true } : i);
     await recordActivity();
-    computeStreak(); updateTopStreak();
     const m = Math.floor(writingTime / 60), s = writingTime % 60;
     notify(`Fragment validé ✓ — rédigé en ${m}:${s.toString().padStart(2,'0')}`);
     currentId = null;
@@ -2600,69 +2567,8 @@ function computeStreak() {
   bestStreak = Math.max(streak, bestStreak);
 }
 
-function updateTopStreak() {
-  $('top-streak').textContent = streak > 0 ? `🔥 ${streak}j` : '';
-  $('top-streak').style.display = streak > 0 ? '' : 'none';
-}
-
 // ===== STATS =====
-const BADGES = [
-  { id: 'first', icon: '🖊️', name: 'Premier fragment', cond: () => Object.values(fragments).some(f => f.validated_at) },
-  { id: 'five', icon: '🌱', name: '5 fragments', cond: () => ideas.filter(i => i.done).length >= 5 },
-  { id: 'ten', icon: '🌿', name: '10 fragments', cond: () => ideas.filter(i => i.done).length >= 10 },
-  { id: 'twenty', icon: '🌳', name: '20 fragments', cond: () => ideas.filter(i => i.done).length >= 20 },
-  { id: 'half', icon: '⚡', name: 'Moitié du livre', cond: () => ideas.length > 0 && ideas.filter(i => i.done).length >= ideas.length / 2 },
-  { id: 's3', icon: '🔥', name: '3 jours de suite', cond: () => streak >= 3 },
-  { id: 's7', icon: '🏆', name: '7 jours de suite', cond: () => streak >= 7 },
-  { id: 'refs', icon: '📚', name: '10 références', cond: () => Object.values(refs).reduce((a, r) => a + r.length, 0) >= 10 },
-  { id: 'links', icon: '🕸️', name: '5 liens créés', cond: () => Object.values(links).reduce((a, l) => a + l.length, 0) >= 5 },
-];
-
-function renderStats() {
-  const done = ideas.filter(i => i.done).length;
-  const total = ideas.length;
-  const allWords = Object.values(fragments).reduce((a, f) => a + cw(f.text || ''), 0);
-  const allRefs = Object.values(refs).reduce((a, r) => a + r.length, 0);
-  const pct = total ? Math.round(done / total * 100) : 0;
-
-  const safe = (id, val) => { const el = $(id); if (el) el.textContent = val; };
-
-  safe('streak-val', streak);
-  safe('best-streak', bestStreak);
-
-  // Weekly challenge
-  const weekGoal = 5;
-  const now = new Date();
-  const weekDone = Object.entries(activityDays)
-    .filter(([d]) => (now - new Date(d)) < 7 * 86400000)
-    .reduce((a, [, v]) => a + v, 0);
-  const fill = $('challenge-fill');
-  if (fill) fill.style.width = Math.min(weekDone / weekGoal * 100, 100) + '%';
-  safe('challenge-label', `${Math.min(weekDone, weekGoal)} / ${weekGoal} accomplis`);
-
-  // Badges
-  const badgesGrid = $('badges-grid');
-  if (badgesGrid) badgesGrid.innerHTML = BADGES.map(b => {
-    const earned = b.cond();
-    return `<div class="badge ${earned ? 'earned' : ''}">
-      <div class="badge-icon ${earned ? '' : 'badge-locked'}">${b.icon}</div>
-      <div class="badge-name">${b.name}</div>
-    </div>`;
-  }).join('');
-
-  // Calendar
-  const cal = $('cal-grid');
-  if (cal) {
-    cal.innerHTML = '';
-    for (let i = 27; i >= 0; i--) {
-      const d = new Date(now.getTime() - i * 86400000).toISOString().split('T')[0];
-      const dot = document.createElement('div');
-      dot.className = 'cal-dot' + (activityDays[d] ? ' has' : '') + (d === today() ? ' today' : '');
-      dot.title = d;
-      cal.appendChild(dot);
-    }
-  }
-}
+function renderStats() {}
 
 // ===== DELETE =====
 let deleteTargetId = null;
@@ -3331,7 +3237,7 @@ async function init() {
   const authed = await checkAuth();
   if (authed) {
     await loadAll();
-    switchView('projects', document.querySelector('#navbar .nav-item'));
+    switchView('write', document.querySelector('#navbar .nav-item'));
   }
 }
 init();
