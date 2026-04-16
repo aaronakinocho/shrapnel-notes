@@ -385,6 +385,76 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 .fade-up { animation: fadeUp 0.3s ease both; }
+
+/* ===== DESKTOP IDEAS PANEL — caché sur mobile ===== */
+#desktop-ideas-panel { display: none; }
+
+/* ===== EDITOR BODY WRAPPER ===== */
+.editor-body { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+#editor-side-panel { flex-shrink: 0; padding: 0 18px 12px; display: flex; flex-direction: column; gap: 14px; }
+
+/* ===== DIP STYLES ===== */
+.dip-header { padding: 14px 12px 10px; border-bottom: 1px solid var(--sable-mid); background: var(--sable); flex-shrink: 0; }
+.dip-project-name { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-dim); margin-bottom: 8px; }
+.dip-search { width: 100%; padding: 7px 10px; font-size: 12px; background: var(--white); border: 1px solid var(--sable-mid); border-radius: 8px; color: var(--ink); outline: none; font-family: inherit; }
+.dip-search::placeholder { color: var(--sable-dark); }
+.dip-list { flex: 1; overflow-y: auto; padding: 8px; }
+.dip-item { display: flex; align-items: flex-start; gap: 7px; padding: 8px; border-radius: 8px; cursor: pointer; transition: background 0.12s; }
+.dip-item:hover { background: var(--sable-mid); }
+.dip-item.active { background: rgba(74,124,89,0.1); }
+.dip-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+.dip-dot.done { background: var(--sauge); }
+.dip-dot.pending { background: var(--sable-dark); }
+.dip-label { font-size: 12px; color: var(--ink); line-height: 1.35; flex: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.dip-item.active .dip-label { color: var(--sauge); font-weight: 500; }
+
+/* ===== DESKTOP LAYOUT ≥ 768px ===== */
+@media (min-width: 768px) {
+  #app {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    grid-template-rows: auto 1fr;
+    height: 100vh; height: 100dvh;
+    overflow: hidden;
+  }
+  #topbar { grid-column: 1 / -1; grid-row: 1; }
+  #main { grid-column: 2; grid-row: 2; overflow: hidden; display: flex; flex-direction: column; }
+  #navbar {
+    grid-column: 1; grid-row: 2;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 16px 0; gap: 4px;
+    border-top: none;
+    border-right: 1px solid rgba(240,247,242,0.15);
+  }
+  #navbar .nav-item span { display: none; }
+  .nav-item { width: 40px; height: 40px; padding: 0; border-radius: 10px; justify-content: center; gap: 0; }
+  .nav-item.active { background: rgba(240,247,242,0.15); }
+  #v-write { flex-direction: row; height: 100%; overflow: hidden; }
+  #desktop-ideas-panel {
+    display: flex !important; flex-direction: column;
+    width: 200px; flex-shrink: 0;
+    border-right: 1px solid var(--sable-mid);
+    background: var(--sable); overflow: hidden;
+  }
+  #write-empty { flex: 1; }
+  #editor { flex: 1; overflow: hidden; }
+  .editor-body { flex-direction: row; }
+  .editor-scroll { flex: 1; min-width: 0; }
+  #editor-side-panel {
+    width: 180px; flex-shrink: 0;
+    border-left: 1px solid var(--sable-mid);
+    background: var(--sable);
+    overflow-y: auto;
+    padding: 14px 12px;
+  }
+  .editor-tabs { flex-direction: column; gap: 4px; }
+  .etab { text-align: left; font-size: 11px; padding: 6px 10px; border-radius: 7px; }
+  #v-projects, #v-ideas, #v-research, #v-read, #v-edit { height: 100%; overflow-y: auto; }
+  #notif { bottom: 20px; }
+  #wa-invite { bottom: 20px; }
+}
 </style>
 </head>
 <body>
@@ -535,6 +605,13 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 
     <!-- WRITE -->
     <div id="v-write" class="view">
+      <div id="desktop-ideas-panel">
+        <div class="dip-header">
+          <div class="dip-project-name" id="dip-project-name"></div>
+          <input class="dip-search" id="dip-search" type="text" placeholder="Rechercher…" oninput="dipFilter(this.value)"/>
+        </div>
+        <div class="dip-list" id="dip-list"></div>
+      </div>
       <div id="write-empty" class="write-empty">
         <div class="empty-glyph">
           <svg width="52" height="52" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -556,43 +633,47 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
           <div class="idea-tag" id="idea-tag"></div>
           <div class="idea-title" id="idea-title"></div>
         </div>
-        <div class="editor-scroll">
-          <!-- Format bubble — global, works in write and edit modes -->
+        <div class="editor-body">
+          <div class="editor-scroll">
+            <!-- Format bubble — global, works in write and edit modes -->
 <div class="format-bubble" id="format-bubble">
   <button class="fmt-btn bold" onmousedown="event.preventDefault();applyFmt('bold')">G</button>
   <button class="fmt-btn italic" onmousedown="event.preventDefault();applyFmt('italic')">I</button>
   <button class="fmt-btn underline" onmousedown="event.preventDefault();applyFmt('underline')">S</button>
 </div>
 
-          <div id="draft-editor" contenteditable="true" data-placeholder="Développe cette idée en 250 mots maximum…" oninput="onDraftInput()" onkeyup="checkSelection()" onmouseup="checkSelection()" ontouchend="checkSelection()"></div>
-          <div class="word-bar">
-            <span class="word-count" id="word-count">0 / 250</span>
-            <div class="meter-track"><div class="meter-fill" id="meter-fill"></div></div>
-            <span class="timer-display" id="timer-display">0:00</span>
-          </div>
-          <div class="editor-tabs">
-            <button class="etab active" onclick="switchTab('links')">↔ Liens</button>
-            <button class="etab" onclick="switchTab('refs')">📚 Références</button>
-          </div>
-          <!-- Links tab -->
-          <div class="tab-panel active" id="tab-links">
-            <div class="linked-chips" id="linked-chips"></div>
-            <input class="link-search" type="text" placeholder="Rechercher un fragment à lier…" oninput="searchLinks(this.value)" id="link-search"/>
-            <div class="link-results" id="link-results"></div>
-          </div>
-          <!-- Refs tab -->
-          <div class="tab-panel" id="tab-refs">
-            <div class="ref-type-row">
-              <button class="ref-type-btn active" onclick="setRefType(this,'📖','Livre')">📖 Livre</button>
-              <button class="ref-type-btn" onclick="setRefType(this,'🎬','Vidéo')">🎬 Vidéo</button>
-              <button class="ref-type-btn" onclick="setRefType(this,'🔗','Lien')">🔗 Lien</button>
-              <button class="ref-type-btn" onclick="setRefType(this,'🎙️','Podcast')">🎙️ Podcast</button>
-              <button class="ref-type-btn" onclick="setRefType(this,'📄','Article')">📄 Article</button>
-              <button class="ref-type-btn" onclick="setRefType(this,'💬','Citation')">💬 Citation</button>
+            <div id="draft-editor" contenteditable="true" data-placeholder="Développe cette idée en 250 mots maximum…" oninput="onDraftInput()" onkeyup="checkSelection()" onmouseup="checkSelection()" ontouchend="checkSelection()"></div>
+            <div class="word-bar">
+              <span class="word-count" id="word-count">0 / 250</span>
+              <div class="meter-track"><div class="meter-fill" id="meter-fill"></div></div>
+              <span class="timer-display" id="timer-display">0:00</span>
             </div>
-            <input class="ref-text-input" type="text" id="ref-input" placeholder="Titre, auteur, URL…"/>
-            <button class="btn-add-ref" onclick="addRef()">+ Ajouter la référence</button>
-            <div class="refs-list" id="refs-list"></div>
+          </div>
+          <div id="editor-side-panel">
+            <div class="editor-tabs">
+              <button class="etab active" onclick="switchTab('links')">↔ Liens</button>
+              <button class="etab" onclick="switchTab('refs')">📚 Références</button>
+            </div>
+            <!-- Links tab -->
+            <div class="tab-panel active" id="tab-links">
+              <div class="linked-chips" id="linked-chips"></div>
+              <input class="link-search" type="text" placeholder="Rechercher un fragment à lier…" oninput="searchLinks(this.value)" id="link-search"/>
+              <div class="link-results" id="link-results"></div>
+            </div>
+            <!-- Refs tab -->
+            <div class="tab-panel" id="tab-refs">
+              <div class="ref-type-row">
+                <button class="ref-type-btn active" onclick="setRefType(this,'📖','Livre')">📖 Livre</button>
+                <button class="ref-type-btn" onclick="setRefType(this,'🎬','Vidéo')">🎬 Vidéo</button>
+                <button class="ref-type-btn" onclick="setRefType(this,'🔗','Lien')">🔗 Lien</button>
+                <button class="ref-type-btn" onclick="setRefType(this,'🎙️','Podcast')">🎙️ Podcast</button>
+                <button class="ref-type-btn" onclick="setRefType(this,'📄','Article')">📄 Article</button>
+                <button class="ref-type-btn" onclick="setRefType(this,'💬','Citation')">💬 Citation</button>
+              </div>
+              <input class="ref-text-input" type="text" id="ref-input" placeholder="Titre, auteur, URL…"/>
+              <button class="btn-add-ref" onclick="addRef()">+ Ajouter la référence</button>
+              <div class="refs-list" id="refs-list"></div>
+            </div>
           </div>
         </div>
         <div class="editor-footer">
@@ -1417,6 +1498,7 @@ async function loadAll() {
     computeStreak();
     updateEmptyState();
     renderProjectPill();
+    renderDesktopIdeasPanel();
     $('loading').classList.add('hidden');
 
     // Onboarding : nouvel utilisateur sans idées
@@ -1504,6 +1586,7 @@ function setCurrentProject(id) {
   renderIdeas();
   updateEmptyState();
   renderProjectPill();
+  renderDesktopIdeasPanel();
 }
 
 function openProjectForm(project) {
@@ -2409,6 +2492,7 @@ function closeEditor() {
   $('editor').style.display = 'none';
   $('write-empty').style.display = '';
   currentId = null;
+  renderDesktopIdeasPanel();
 }
 
 function goHome() {
@@ -2471,6 +2555,42 @@ function updateEmptyState() {
   if (btn) btn.style.display = rem === 0 ? 'none' : '';
 }
 
+// ===== DESKTOP IDEAS PANEL =====
+let dipCurrentFilter = '';
+
+function renderDesktopIdeasPanel() {
+  if (window.innerWidth < 768) return;
+  const nameEl = $('dip-project-name');
+  if (nameEl) nameEl.textContent = currentProject ? currentProject.name : 'Toutes les idées';
+  dipFilter(dipCurrentFilter);
+}
+
+function dipFilter(q) {
+  dipCurrentFilter = q || '';
+  const listEl = $('dip-list');
+  if (!listEl) return;
+  const isOnlyProject = projects.length <= 1;
+  let list = ideas.filter(i =>
+    currentProject
+      ? (i.project_id === currentProject.id || (isOnlyProject && i.project_id == null))
+      : i.project_id == null
+  );
+  if (dipCurrentFilter) {
+    const lq = dipCurrentFilter.toLowerCase();
+    list = list.filter(i => i.title.toLowerCase().includes(lq));
+  }
+  const sorted = [...list.filter(i => !i.done), ...list.filter(i => i.done)];
+  if (!sorted.length) {
+    listEl.innerHTML = '<div style="font-size:11px;color:var(--ink-dim);padding:12px 8px;text-align:center;">Aucune idée.</div>';
+    return;
+  }
+  listEl.innerHTML = sorted.map(idea => `
+    <div class="dip-item${idea.id === currentId ? ' active' : ''}" onclick="openIdea('${idea.id}')">
+      <div class="dip-dot ${idea.done ? 'done' : 'pending'}"></div>
+      <span class="dip-label">${idea.title}</span>
+    </div>`).join('');
+}
+
 async function pickRandom() {
   const pool = ideas.filter(i => !i.done && (
     currentProject ? i.project_id === currentProject.id : i.project_id == null
@@ -2521,6 +2641,7 @@ async function openIdea(id) {
   updateWordBar();
   $('write-empty').style.display = 'none';
   $('editor').style.display = 'flex';
+  renderDesktopIdeasPanel();
   setTimeout(() => $('draft-editor').focus(), 100);
 }
 
@@ -2586,6 +2707,7 @@ async function validateFragment() {
     $('editor').style.display = 'none';
     $('write-empty').style.display = '';
     updateEmptyState();
+    renderDesktopIdeasPanel();
     setTimeout(() => showWAInvite(validatedId), 800);
   } catch(e) { notify('Erreur lors de la validation'); }
 }
@@ -2973,6 +3095,7 @@ async function addIdeas() {
     hideAddPanel();
     updateEmptyState();
     renderIdeas();
+    renderDesktopIdeasPanel();
     notify(`${lines.length} idée${lines.length > 1 ? 's' : ''} ajoutée${lines.length > 1 ? 's' : ''}`);
   } catch(e) { notify('Erreur lors de l\'ajout'); }
 }
@@ -3038,6 +3161,7 @@ async function executeDelete() {
     }
     renderIdeas();
     updateEmptyState();
+    renderDesktopIdeasPanel();
   } catch(e) { notify('Erreur lors de la suppression'); }
 }
 
@@ -3665,6 +3789,10 @@ if ('serviceWorker' in navigator) {
     if (!refreshing) { refreshing = true; window.location.reload(); }
   });
 }
+
+window.addEventListener('resize', () => {
+  if (window.innerWidth >= 768) renderDesktopIdeasPanel();
+});
 
 // ===== INIT =====
 async function init() {
