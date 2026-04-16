@@ -108,6 +108,9 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 }
 .brand { display: flex; align-items: center; gap: 9px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .brand-name { color: var(--green-text); font-size: 15px; font-weight: 500; letter-spacing: 0.02em; }
+.brand-svg-bg { fill: var(--sauge-dark); }
+.brand-svg-accent-stroke { stroke: var(--terracotta); }
+.brand-svg-accent-fill { fill: var(--terracotta); }
 .streak-pill { font-size: 11px; color: var(--green-text); background: rgba(240,247,242,0.15); border: 1px solid rgba(240,247,242,0.28); padding: 3px 10px; border-radius: 20px; }
 #project-pill { display: none; align-items: center; gap: 5px; background: rgba(240,247,242,0.14); border: 1px solid rgba(240,247,242,0.25); border-radius: 20px; padding: 4px 10px 4px 8px; cursor: pointer; max-width: 160px; -webkit-tap-highlight-color: transparent; }
 #project-pill .pp-icon { font-size: 14px; line-height: 1; }
@@ -506,13 +509,13 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   <!-- Topbar -->
   <div id="topbar">
     <div class="brand" onclick="goHome()">
-      <svg width="26" height="26" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-        <rect width="64" height="64" rx="14" fill="#3A6B48"/>
+      <svg class="brand-svg" width="26" height="26" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <rect width="64" height="64" rx="14" class="brand-svg-bg"/>
         <polygon points="32,8 44,14 52,26 48,36 38,44 28,50 16,44 12,30 18,18 28,12" fill="none" stroke="#F0F7F2" stroke-width="1.5"/>
-        <polyline points="32,8 36,20 30,28 34,38 28,50" fill="none" stroke="#E07A50" stroke-width="2" stroke-linecap="round"/>
+        <polyline points="32,8 36,20 30,28 34,38 28,50" fill="none" class="brand-svg-accent-stroke" stroke-width="2" stroke-linecap="round"/>
         <line x1="44" y1="14" x2="36" y2="20" stroke="#F0F7F2" stroke-width="0.8" opacity="0.5"/>
         <line x1="52" y1="26" x2="36" y2="20" stroke="#F0F7F2" stroke-width="0.8" opacity="0.5"/>
-        <circle cx="30" cy="28" r="2.5" fill="#E07A50"/>
+        <circle cx="30" cy="28" r="2.5" class="brand-svg-accent-fill"/>
       </svg>
       <span class="brand-name">Shrapnel Notes</span>
     </div>
