@@ -1375,7 +1375,10 @@ async function loadAll() {
     ideas = ideasData || [];
     researchNotes = researchData || [];
     projects = projectsData || [];
-    if (projects.length > 0 && !currentProject) currentProject = projects[0];
+    if (projects.length > 0 && !currentProject) {
+      const savedId = localStorage.getItem('sn_current_project');
+      currentProject = (savedId && projects.find(p => p.id === savedId)) || projects[0];
+    }
     fragments = {};
     (fragsData || []).forEach(f => fragments[f.idea_id] = f);
     links = {};
@@ -1417,7 +1420,10 @@ async function loadProjects() {
   try {
     const data = await db.get('projects', { select: '*', order: 'created_at.asc' });
     projects = data || [];
-    if (projects.length > 0 && !currentProject) currentProject = projects[0];
+    if (projects.length > 0 && !currentProject) {
+      const savedId = localStorage.getItem('sn_current_project');
+      currentProject = (savedId && projects.find(p => p.id === savedId)) || projects[0];
+    }
   } catch(e) { projects = []; }
 }
 
@@ -1469,9 +1475,11 @@ function renderProjects() {
 }
 
 function setCurrentProject(id) {
-  currentProject = projects.find(p => p.id === id);
+  currentProject = projects.find(p => p.id === id) || null;
+  localStorage.setItem('sn_current_project', id);
   renderProjects();
   renderIdeas();
+  updateEmptyState();
 }
 
 function openProjectForm(project) {
@@ -2390,14 +2398,18 @@ function goBack() { switchView(prevView, document.querySelector('.nav-item')); }
 
 // ===== WRITE =====
 function updateEmptyState() {
-  const rem = ideas.filter(i => !i.done).length;
+  const rem = ideas.filter(i => !i.done && (
+    currentProject ? i.project_id === currentProject.id : i.project_id == null
+  )).length;
   $('empty-label').textContent = rem === 0 ? 'Toutes les idées ont été traitées !' : `${rem} idée${rem > 1 ? 's' : ''} en attente`;
   const btn = $('btn-pick');
   if (btn) btn.style.display = rem === 0 ? 'none' : '';
 }
 
 async function pickRandom() {
-  const pool = ideas.filter(i => !i.done);
+  const pool = ideas.filter(i => !i.done && (
+    currentProject ? i.project_id === currentProject.id : i.project_id == null
+  ));
   if (!pool.length) return;
   const pick = pool[Math.floor(Math.random() * pool.length)];
   await openIdea(pick.id);
