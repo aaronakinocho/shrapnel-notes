@@ -1432,7 +1432,8 @@ function renderProjects() {
     $('ap-name').textContent = currentProject.name;
     $('ap-meta').textContent = [currentProject.genre, currentProject.tone, currentProject.audience].filter(Boolean).join(' · ');
 
-    const projectIdeas = ideas.filter(i => i.project_id === currentProject.id);
+    const isOnlyProject = projects.length <= 1;
+    const projectIdeas = ideas.filter(i => i.project_id === currentProject.id || (isOnlyProject && i.project_id == null));
     const total = projectIdeas.length;
     const done = projectIdeas.filter(i => i.done).length;
     const projectIdeaIds = new Set(projectIdeas.map(i => i.id));
@@ -2624,7 +2625,7 @@ function renderIdeas() {
   // Filter by active project
   const badge = $('ideas-project-badge');
   if (currentProject) {
-    list = list.filter(i => i.project_id === currentProject.id);
+    list = list.filter(i => i.project_id === currentProject.id || i.project_id == null);
     badge.style.display = 'flex';
     badge.innerHTML = `<span style="font-size:15px;">${currentProject.icon || '📖'}</span><span>${currentProject.name}</span><span style="margin-left:auto;font-size:11px;">${list.length} idée${list.length !== 1 ? 's' : ''}</span>`;
   } else {
