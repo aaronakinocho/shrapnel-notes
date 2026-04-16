@@ -84,8 +84,8 @@ footer { background: #3A6B48; padding: 24px 40px; display: flex; align-items: ce
     <span class="nav-name">Shrapnel Notes</span>
   </div>
   <div class="nav-actions">
-    <button class="btn-ghost" onclick="showTab('login')">Se connecter</button>
-    <button class="btn-cta-sm" onclick="showTab('signup')">Commencer</button>
+    <button class="btn-ghost" onclick="document.querySelector('.login-section').scrollIntoView({behavior:'smooth'});showTab('login')">Se connecter</button>
+    <button class="btn-cta-sm" onclick="document.querySelector('.login-section').scrollIntoView({behavior:'smooth'});showTab('signup')">Commencer</button>
   </div>
 </nav>
 

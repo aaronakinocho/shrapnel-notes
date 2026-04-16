@@ -106,9 +106,22 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   display: flex; align-items: center; justify-content: space-between;
   flex-shrink: 0;
 }
-.brand { display: flex; align-items: center; gap: 9px; }
+.brand { display: flex; align-items: center; gap: 9px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .brand-name { color: var(--green-text); font-size: 15px; font-weight: 500; letter-spacing: 0.02em; }
 .streak-pill { font-size: 11px; color: var(--green-text); background: rgba(240,247,242,0.15); border: 1px solid rgba(240,247,242,0.28); padding: 3px 10px; border-radius: 20px; }
+#project-pill { display: none; align-items: center; gap: 5px; background: rgba(240,247,242,0.14); border: 1px solid rgba(240,247,242,0.25); border-radius: 20px; padding: 4px 10px 4px 8px; cursor: pointer; max-width: 160px; -webkit-tap-highlight-color: transparent; }
+#project-pill .pp-icon { font-size: 14px; line-height: 1; }
+#project-pill .pp-name { font-size: 12px; color: var(--green-text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; }
+#project-pill .pp-chevron { font-size: 10px; color: rgba(240,247,242,0.6); flex-shrink: 0; }
+#project-dropdown { display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--white); border-bottom: 1px solid var(--sable-mid); box-shadow: 0 6px 20px rgba(0,0,0,0.12); z-index: 200; max-height: 280px; overflow-y: auto; }
+#project-dropdown .pd-item { display: flex; align-items: center; gap: 10px; padding: 13px 18px; cursor: pointer; border-bottom: 1px solid var(--sable-mid); transition: background 0.12s; }
+#project-dropdown .pd-item:last-child { border-bottom: none; }
+#project-dropdown .pd-item:active { background: var(--sable); }
+#project-dropdown .pd-item.active { background: rgba(74,124,89,0.07); }
+#project-dropdown .pd-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+#project-dropdown .pd-name { font-size: 14px; color: var(--ink); flex: 1; }
+#project-dropdown .pd-check { font-size: 14px; color: var(--sauge); }
+#topbar { position: relative; }
 
 #main { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--sable); min-height: 0; display: flex; flex-direction: column; }
 
@@ -492,7 +505,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 <div id="app">
   <!-- Topbar -->
   <div id="topbar">
-    <div class="brand">
+    <div class="brand" onclick="goHome()">
       <svg width="26" height="26" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
         <rect width="64" height="64" rx="14" fill="#3A6B48"/>
         <polygon points="32,8 44,14 52,26 48,36 38,44 28,50 16,44 12,30 18,18 28,12" fill="none" stroke="#F0F7F2" stroke-width="1.5"/>
@@ -503,8 +516,13 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
       </svg>
       <span class="brand-name">Shrapnel Notes</span>
     </div>
+    <div id="project-pill" onclick="toggleProjectDropdown(event)">
+      <span class="pp-icon" id="pp-icon"></span>
+      <span class="pp-name" id="pp-name"></span>
+      <span class="pp-chevron">▾</span>
+    </div>
+    <div id="project-dropdown"></div>
     <div style="display:flex;align-items:center;gap:10px;">
-
       <button onclick="handleLogout()" style="font-size:11px;color:rgba(240,247,242,0.5);background:none;border:none;cursor:pointer;padding:2px;" title="Se déconnecter">⎋</button>
     </div>
   </div>
@@ -531,6 +549,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 
       <div id="editor" class="editor" style="display:none">
         <div class="idea-header">
+          <button onclick="closeEditor()" style="display:inline-flex;align-items:center;gap:4px;background:none;border:none;font-size:12px;color:var(--ink-dim);cursor:pointer;padding:0 0 10px;font-family:inherit;">← Retour</button>
           <div class="idea-tag" id="idea-tag"></div>
           <div class="idea-title" id="idea-title"></div>
         </div>
@@ -1394,6 +1413,7 @@ async function loadAll() {
     (actData || []).forEach(a => activityDays[a.day] = a.count);
     computeStreak();
     updateEmptyState();
+    renderProjectPill();
     $('loading').classList.add('hidden');
 
     // Onboarding : nouvel utilisateur sans idées
@@ -1480,6 +1500,7 @@ function setCurrentProject(id) {
   renderProjects();
   renderIdeas();
   updateEmptyState();
+  renderProjectPill();
 }
 
 function openProjectForm(project) {
@@ -2381,6 +2402,47 @@ function closeWelcome() {
 }
 
 // ===== NAVIGATION =====
+function closeEditor() {
+  $('editor').style.display = 'none';
+  $('write-empty').style.display = '';
+  currentId = null;
+}
+
+function goHome() {
+  closeEditor();
+  switchView('write', document.querySelector('#navbar .nav-item'));
+}
+
+function renderProjectPill() {
+  const pill = $('project-pill');
+  if (!pill) return;
+  if (currentProject) {
+    $('pp-icon').textContent = currentProject.icon || '📖';
+    $('pp-name').textContent = currentProject.name;
+    pill.style.display = 'flex';
+  } else {
+    pill.style.display = 'none';
+  }
+}
+
+function toggleProjectDropdown(e) {
+  if (e) e.stopPropagation();
+  const dd = $('project-dropdown');
+  if (dd.style.display === 'block') { dd.style.display = 'none'; return; }
+  dd.innerHTML = projects.map(p => `
+    <div class="pd-item${currentProject?.id === p.id ? ' active' : ''}" onclick="setCurrentProject('${p.id}');$('project-dropdown').style.display='none'">
+      <span style="font-size:16px">${p.icon || '📖'}</span>
+      <span class="pd-name">${p.name}</span>
+      ${currentProject?.id === p.id ? '<span class="pd-check">✓</span>' : ''}
+    </div>`).join('');
+  dd.style.display = 'block';
+}
+
+document.addEventListener('click', () => {
+  const dd = $('project-dropdown');
+  if (dd) dd.style.display = 'none';
+});
+
 function switchView(v, btn) {
   if (['write','projects','ideas','research'].includes(v)) prevView = v;
   document.querySelectorAll('.view').forEach(el => { el.classList.remove('active'); el.style.display = ''; });
