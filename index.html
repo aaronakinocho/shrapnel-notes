@@ -762,6 +762,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 
         <!-- List view -->
         <div id="ideas-list-panel">
+          <div id="ideas-project-badge" style="display:none;align-items:center;gap:6px;background:var(--sable);border:1px solid var(--sable-mid);border-radius:10px;padding:7px 12px;margin-bottom:8px;font-size:12px;color:var(--ink-dim);"></div>
           <div class="filter-row">
             <button class="filter-chip active" onclick="setFilter(this,'all')">Toutes</button>
             <button class="filter-chip" onclick="setFilter(this,'pending')">En attente</button>
@@ -1431,9 +1432,11 @@ function renderProjects() {
     $('ap-name').textContent = currentProject.name;
     $('ap-meta').textContent = [currentProject.genre, currentProject.tone, currentProject.audience].filter(Boolean).join(' · ');
 
-    const total = ideas.length;
-    const done = ideas.filter(i => i.done).length;
-    const words = Object.values(fragments).reduce((a, f) => a + (f.text ? cw(f.text) : 0), 0);
+    const projectIdeas = ideas.filter(i => i.project_id === currentProject.id);
+    const total = projectIdeas.length;
+    const done = projectIdeas.filter(i => i.done).length;
+    const projectIdeaIds = new Set(projectIdeas.map(i => i.id));
+    const words = Object.values(fragments).filter(f => projectIdeaIds.has(f.idea_id)).reduce((a, f) => a + (f.text ? cw(f.text) : 0), 0);
     const pct = total > 0 ? Math.round(done / total * 100) : 0;
 
     $('ap-done').textContent = done;
@@ -1467,6 +1470,7 @@ function renderProjects() {
 function setCurrentProject(id) {
   currentProject = projects.find(p => p.id === id);
   renderProjects();
+  renderIdeas();
 }
 
 function openProjectForm(project) {
@@ -2329,7 +2333,7 @@ function openVoiceFragment(transcribedText) {
 
 async function createVoiceIdea(title, text) {
   try {
-    const res = await db.post('ideas', [{ title, done: false, position: ideas.length, user_id: uid() }]);
+    const res = await db.post('ideas', [{ title, done: false, position: ideas.length, user_id: uid(), project_id: currentProject?.id || null }]);
     const idea = res[0];
     ideas.push(idea);
     // Create fragment with transcribed text
@@ -2617,6 +2621,15 @@ function setFilter(btn, f) {
 
 function renderIdeas() {
   let list = [...ideas];
+  // Filter by active project
+  const badge = $('ideas-project-badge');
+  if (currentProject) {
+    list = list.filter(i => i.project_id === currentProject.id);
+    badge.style.display = 'flex';
+    badge.innerHTML = `<span style="font-size:15px;">${currentProject.icon || '📖'}</span><span>${currentProject.name}</span><span style="margin-left:auto;font-size:11px;">${list.length} idée${list.length !== 1 ? 's' : ''}</span>`;
+  } else {
+    badge.style.display = 'none';
+  }
   if (ideasSearch) list = list.filter(i => i.title.toLowerCase().includes(ideasSearch.toLowerCase()));
 
   let html = '';
@@ -2876,7 +2889,7 @@ async function addIdeas() {
   const lines = $('add-textarea').value.split('\n').map(l => l.trim()).filter(Boolean);
   if (!lines.length) return;
   try {
-    const rows = lines.map((title, i) => ({ title, done: false, position: ideas.length + i }));
+    const rows = lines.map((title, i) => ({ title, done: false, position: ideas.length + i, project_id: currentProject?.id || null }));
     const res = await db.post('ideas', rows.map(r => ({...r, user_id: uid()})));
     ideas.push(...(res || []));
     hideAddPanel();

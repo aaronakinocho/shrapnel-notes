@@ -42,6 +42,10 @@ create table if not exists activity (
   created_at timestamptz default now()
 );
 
+-- Migration : lier les idées à un projet
+alter table ideas add column if not exists project_id uuid references projects(id) on delete set null;
+create index if not exists idx_ideas_project_id on ideas(project_id);
+
 create index if not exists idx_fragments_idea_id on fragments(idea_id);
 create index if not exists idx_links_from on fragment_links(from_idea_id);
 create index if not exists idx_links_to on fragment_links(to_idea_id);
