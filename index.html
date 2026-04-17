@@ -427,6 +427,12 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .mscr-frag-item.drag-over { border-color: var(--sauge); border-top: 2px solid var(--sauge); }
 .mscr-order-btns { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
 .mscr-order-btn { font-size: 13px; padding: 2px 5px; border: 1px solid var(--sable-mid); border-radius: 5px; color: var(--ink-dim); cursor: pointer; line-height: 1.2; }
+.mscr-drag-handle { font-size: 18px; color: var(--sable-dark); padding: 0 4px; cursor: grab; touch-action: none; user-select: none; flex-shrink: 0; -webkit-user-select: none; }
+.mscr-drag-handle:active { cursor: grabbing; color: var(--sauge); }
+.mscr-frag-item.touch-dragging { opacity: 0.3; }
+.mscr-drop-line { height: 3px; background: var(--terracotta); border-radius: 2px; margin: 2px 4px; pointer-events: none; }
+.mscr-frag-content { flex: 1; min-width: 0; cursor: pointer; }
+.mscr-frag-content:active { opacity: 0.7; }
 
 /* ===== DESKTOP LAYOUT ≥ 768px ===== */
 @media (min-width: 768px) {
@@ -1567,6 +1573,14 @@ let mscrDragFromUnclassified = false;
 let sectionFormMode = 'create';
 let sectionFormId = null;
 let sectionFormColor = '#4A7C59';
+// Touch drag state
+let touchDragId = null;
+let touchDragFromIdx = null;
+let touchDragTargetIdx = null;
+let touchGhost = null;
+let touchDragActive = false;
+let touchOffsetX = 0;
+let touchOffsetY = 0;
 
 async function loadProjects() {
   try {
@@ -3940,12 +3954,12 @@ function renderMscrSections() {
       <div class="mscr-pool">
         <div style="font-size:10px;color:var(--ink-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;margin-top:4px;">Non classés (${unclassified.length})</div>
         ${unclassified.map(idea => `
-          <div class="mscr-fragment-row">
-            <div style="flex:1;">
+          <div class="mscr-fragment-row" onclick="openFragmentPreview('${idea.id}')">
+            <div class="mscr-frag-content" style="flex:1;">
               <div class="mscr-fragment-title">${idea.title}</div>
               <div class="mscr-fragment-meta">${cw(fragments[idea.id]?.text||'')} mots</div>
             </div>
-            ${projectSections.length > 0 ? `<button class="mscr-btn-sm" onclick="showAssignMenu('${idea.id}')">Assigner →</button>` : ''}
+            ${projectSections.length > 0 ? `<button class="mscr-btn-sm" onclick="event.stopPropagation();showAssignMenu('${idea.id}')">Assigner →</button>` : ''}
           </div>`).join('')}
       </div>` : ''}
     </div>
@@ -3967,20 +3981,19 @@ function renderMscrDetail() {
       </div>
       <button onclick="openEditSectionForm('${section.id}')" style="font-size:11px;padding:4px 8px;border:1px solid rgba(240,247,242,0.3);border-radius:6px;color:var(--green-text);opacity:0.8;">Éditer</button>
     </div>
-    <div style="flex:1;overflow-y:auto;padding:16px;">
+    <div style="flex:1;overflow-y:auto;padding:16px;" id="mscr-detail-scroll">
       ${sectionFrags.length === 0 ? `<div style="font-size:13px;color:var(--ink-dim);text-align:center;padding:30px 0;">Aucun fragment dans cette section.<br><span style="font-size:12px;">Assigne des fragments depuis la liste.</span></div>` : ''}
-      ${sectionFrags.map((idea, i) => `
-        <div class="mscr-frag-item">
-          <div class="mscr-order-btns">
-            ${i > 0 ? `<button class="mscr-order-btn" onclick="moveMscrFragPos('${idea.id}','up')">↑</button>` : `<div style="width:24px;height:20px;"></div>`}
-            ${i < sectionFrags.length-1 ? `<button class="mscr-order-btn" onclick="moveMscrFragPos('${idea.id}','down')">↓</button>` : `<div style="width:24px;height:20px;"></div>`}
-          </div>
-          <div style="flex:1;min-width:0;">
-            <div class="mscr-fragment-title">${idea.title}</div>
-            <div class="mscr-fragment-meta">${cw(fragments[idea.id]?.text||'')} mots</div>
-          </div>
-          <button class="mscr-btn-sm" onclick="showMoveMenu('${idea.id}')">Déplacer →</button>
-        </div>`).join('')}
+      <div id="mscr-detail-list">
+        ${sectionFrags.map((idea, i) => `
+          <div class="mscr-frag-item" data-idea="${idea.id}" data-idx="${i}">
+            <div class="mscr-drag-handle" ontouchstart="mscrHandleTouchStart(event,'${idea.id}',${i})">⠿</div>
+            <div class="mscr-frag-content" onclick="openFragmentPreview('${idea.id}')">
+              <div class="mscr-fragment-title">${idea.title}</div>
+              <div class="mscr-fragment-meta">${cw(fragments[idea.id]?.text||'')} mots</div>
+            </div>
+            <button class="mscr-btn-sm" onclick="event.stopPropagation();showMoveMenu('${idea.id}')">Déplacer →</button>
+          </div>`).join('')}
+      </div>
     </div>
   </div>`;
 }
@@ -4026,11 +4039,11 @@ function renderManuscriptDesktop() {
                   ondrop="onMscrDropItem(event,${i})"
                   style="cursor:grab;">
                   <div style="font-size:16px;color:var(--sable-dark);padding:0 2px;">⠿</div>
-                  <div style="flex:1;min-width:0;">
+                  <div class="mscr-frag-content" onclick="openFragmentPreview('${idea.id}')">
                     <div class="mscr-fragment-title">${idea.title}</div>
                     <div class="mscr-fragment-meta">${cw(fragments[idea.id]?.text||'')} mots</div>
                   </div>
-                  <button class="mscr-btn-sm" onclick="showMoveMenu('${idea.id}')" style="font-size:10px;">Déplacer →</button>
+                  <button class="mscr-btn-sm" onclick="event.stopPropagation();showMoveMenu('${idea.id}')" style="font-size:10px;">Déplacer →</button>
                 </div>`).join('')}
             </div>` : ''}
       </div>
@@ -4041,11 +4054,11 @@ function renderManuscriptDesktop() {
           <div class="mscr-fragment-row" draggable="true" data-idea="${idea.id}"
             ondragstart="mscrDragUnclassified(event,'${idea.id}')"
             style="cursor:grab;">
-            <div style="flex:1;min-width:0;">
+            <div class="mscr-frag-content" onclick="openFragmentPreview('${idea.id}')" style="flex:1;min-width:0;">
               <div class="mscr-fragment-title">${idea.title}</div>
               <div class="mscr-fragment-meta">${cw(fragments[idea.id]?.text||'')} mots</div>
             </div>
-            ${projectSections.length > 0 ? `<button class="mscr-btn-sm" onclick="showAssignMenu('${idea.id}')" style="font-size:10px;">+</button>` : ''}
+            ${projectSections.length > 0 ? `<button class="mscr-btn-sm" onclick="event.stopPropagation();showAssignMenu('${idea.id}')" style="font-size:10px;">+</button>` : ''}
           </div>`).join('')}
       </div>
     </div>
@@ -4265,6 +4278,127 @@ async function confirmDeleteSection(id) {
   $('section-form-modal')?.remove();
   if (!confirm('Supprimer cette section ? Les fragments seront désassignés.')) return;
   await deleteSection(id);
+}
+
+// Fragment preview
+function openFragmentPreview(ideaId) {
+  if (touchDragActive) return; // don't open preview during drag
+  const idea = ideas.find(i => i.id === ideaId);
+  const frag = fragments[ideaId];
+  if (!idea || !frag) return;
+  const existing = $('frag-preview-modal');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'frag-preview-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9800;display:flex;align-items:flex-end;justify-content:center;';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  const wordCount = cw(frag.text || '');
+  const d = frag.validated_at ? new Date(frag.validated_at) : null;
+  const dateStr = d ? d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : '';
+  overlay.innerHTML = `<div style="background:var(--sable);border-radius:24px 24px 0 0;width:100%;max-width:600px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;">
+    <div style="padding:16px 16px 12px;display:flex;align-items:flex-start;gap:10px;border-bottom:1px solid var(--sable-mid);flex-shrink:0;">
+      <div style="flex:1;">
+        <div style="font-family:Georgia,serif;font-style:italic;font-size:17px;color:var(--ink);line-height:1.3;">${idea.title}</div>
+        <div style="font-size:11px;color:var(--ink-dim);margin-top:4px;">${wordCount} mots${dateStr?' · '+dateStr:''}</div>
+      </div>
+      <button onclick="$('frag-preview-modal').remove()" style="font-size:24px;color:var(--ink-dim);padding:0 4px;line-height:1;flex-shrink:0;">×</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:20px 18px 40px;">
+      <div style="font-family:Georgia,serif;font-size:15px;line-height:1.9;color:var(--ink-mid);">${frag.text||'<span style="color:var(--ink-dim);font-style:italic;">Aucun texte</span>'}</div>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+// Touch drag & drop (mobile)
+function mscrHandleTouchStart(event, ideaId, idx) {
+  event.preventDefault();
+  event.stopPropagation();
+  const touch = event.touches[0];
+  const item = event.currentTarget.closest('.mscr-frag-item');
+  if (!item) return;
+  touchDragId = ideaId;
+  touchDragFromIdx = idx;
+  touchDragTargetIdx = idx;
+  touchDragActive = true;
+  const rect = item.getBoundingClientRect();
+  touchOffsetX = touch.clientX - rect.left;
+  touchOffsetY = touch.clientY - rect.top;
+  // Create ghost
+  touchGhost = document.createElement('div');
+  touchGhost.style.cssText = `position:fixed;width:${rect.width}px;left:${rect.left}px;top:${rect.top}px;z-index:9999;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.18);transform:scale(1.02);background:var(--white,#fff);border-radius:10px;border:1.5px solid var(--sauge,#4A7C59);padding:10px 12px;display:flex;align-items:center;gap:8px;opacity:0.92;`;
+  const _ghostIdea = ideas.find(i => i.id === ideaId);
+  touchGhost.innerHTML = `<div style="font-size:18px;color:#9B8E7E;padding:0 4px;">⠿</div><div style="flex:1;min-width:0;"><div style="font-size:13px;color:#1C1C1C;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_ghostIdea?.title||''}</div></div>`;
+  document.body.appendChild(touchGhost);
+  item.classList.add('touch-dragging');
+  document.addEventListener('touchmove', mscrDocTouchMove, { passive: false });
+  document.addEventListener('touchend', mscrDocTouchEnd, { once: true });
+}
+
+function mscrDocTouchMove(event) {
+  if (!touchDragActive) return;
+  event.preventDefault();
+  const touch = event.touches[0];
+  if (touchGhost) {
+    touchGhost.style.left = (touch.clientX - touchOffsetX) + 'px';
+    touchGhost.style.top = (touch.clientY - touchOffsetY) + 'px';
+  }
+  updateTouchDropIndicator(touch);
+}
+
+function mscrDocTouchEnd(event) {
+  document.removeEventListener('touchmove', mscrDocTouchMove);
+  if (!touchDragActive) { cleanupTouchDrag(); return; }
+  const fromIdx = touchDragFromIdx;
+  const insertBefore = touchDragTargetIdx;
+  cleanupTouchDrag();
+  if (fromIdx !== null && insertBefore !== null) reorderMscrFragments(fromIdx, insertBefore);
+}
+
+function updateTouchDropIndicator(touch) {
+  document.querySelector('.mscr-drop-line')?.remove();
+  const list = $('mscr-detail-list');
+  if (!list) return;
+  const items = Array.from(list.querySelectorAll('.mscr-frag-item[data-idea]'));
+  let insertBefore = items.length;
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].dataset.idea === touchDragId) continue;
+    const rect = items[i].getBoundingClientRect();
+    if (touch.clientY < rect.top + rect.height / 2) { insertBefore = i; break; }
+  }
+  touchDragTargetIdx = insertBefore;
+  const line = document.createElement('div');
+  line.className = 'mscr-drop-line';
+  if (insertBefore < items.length) list.insertBefore(line, items[insertBefore]);
+  else list.appendChild(line);
+}
+
+function cleanupTouchDrag() {
+  touchDragActive = false;
+  touchGhost?.remove(); touchGhost = null;
+  document.querySelector('.mscr-drop-line')?.remove();
+  document.querySelector(`.mscr-frag-item[data-idea="${touchDragId}"]`)?.classList.remove('touch-dragging');
+  touchDragId = null; touchDragFromIdx = null; touchDragTargetIdx = null;
+}
+
+async function reorderMscrFragments(fromIdx, insertBefore) {
+  if (!currentSectionId) return;
+  const sectionFrags = getSectionFragments(currentSectionId);
+  if (fromIdx < 0 || fromIdx >= sectionFrags.length) return;
+  const finalPos = insertBefore > fromIdx ? insertBefore - 1 : insertBefore;
+  if (finalPos === fromIdx || finalPos < 0) return;
+  const reordered = [...sectionFrags];
+  const [moved] = reordered.splice(fromIdx, 1);
+  reordered.splice(Math.min(finalPos, reordered.length), 0, moved);
+  try {
+    await Promise.all(reordered.map((idea, i) => {
+      const frag = fragments[idea.id];
+      if (!frag || frag.position === i) return null;
+      frag.position = i;
+      return db.patch('fragments', `id=eq.${frag.id}`, { position: i });
+    }).filter(Boolean));
+    renderManuscript();
+  } catch(e) { notify('Erreur réordonnancement'); }
 }
 
 // Assign / move menus
