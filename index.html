@@ -408,6 +408,26 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .dip-label { font-size: 12px; color: var(--ink); line-height: 1.35; flex: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .dip-item.active .dip-label { color: var(--sauge); font-weight: 500; }
 
+/* ===== MANUSCRIT ===== */
+#v-manuscrit { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+#v-manuscrit.active { display: flex; }
+.mscr-section-card { background: var(--white); border: 1px solid var(--sable-mid); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: border-color 0.15s; }
+.mscr-section-card:active { background: var(--sable-mid); }
+.mscr-section-card.active { border-color: var(--sauge); }
+.mscr-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.mscr-section-name { flex: 1; font-size: 14px; color: var(--ink); font-family: Georgia, serif; font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mscr-count { font-size: 11px; color: var(--ink-dim); background: var(--sable); padding: 2px 8px; border-radius: 10px; flex-shrink: 0; }
+.mscr-pool { margin-top: 16px; }
+.mscr-fragment-row { background: var(--white); border: 1px solid var(--sable-mid); border-radius: 10px; padding: 10px 12px; margin-bottom: 6px; display: flex; align-items: flex-start; gap: 8px; }
+.mscr-fragment-row.drag-over { border-color: var(--sauge); background: rgba(74,124,89,0.06); }
+.mscr-fragment-title { font-size: 13px; color: var(--ink); line-height: 1.4; }
+.mscr-fragment-meta { font-size: 10px; color: var(--ink-dim); margin-top: 2px; }
+.mscr-btn-sm { font-size: 11px; padding: 4px 10px; border: 1px solid var(--sable-mid); border-radius: 8px; color: var(--sauge); white-space: nowrap; cursor: pointer; flex-shrink: 0; }
+.mscr-frag-item { background: var(--white); border: 1px solid var(--sable-mid); border-radius: 10px; padding: 10px 12px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.mscr-frag-item.drag-over { border-color: var(--sauge); border-top: 2px solid var(--sauge); }
+.mscr-order-btns { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+.mscr-order-btn { font-size: 13px; padding: 2px 5px; border: 1px solid var(--sable-mid); border-radius: 5px; color: var(--ink-dim); cursor: pointer; line-height: 1.2; }
+
 /* ===== DESKTOP LAYOUT ≥ 768px ===== */
 @media (min-width: 768px) {
   #app {
@@ -452,6 +472,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   .editor-tabs { flex-direction: column; gap: 4px; }
   .etab { text-align: left; font-size: 11px; padding: 6px 10px; border-radius: 7px; }
   #v-projects, #v-ideas, #v-research, #v-read, #v-edit { height: 100%; overflow-y: auto; }
+  #v-manuscrit { height: 100%; overflow: hidden; }
   #notif { bottom: 20px; }
   #wa-invite { bottom: 20px; }
 }
@@ -734,14 +755,6 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
               <span style="font-size:10px;color:var(--ink-dim);text-align:center;flex:1;">Encre</span>
               <span style="font-size:10px;color:var(--ink-dim);text-align:center;flex:1;">Volcan</span>
               <span style="font-size:10px;color:var(--ink-dim);text-align:center;flex:1;">Lilas</span>
-            </div>
-          </div>
-
-          <div>
-            <div class="section-label">Exporter le manuscrit</div>
-            <div style="display:flex;gap:10px;">
-              <button onclick="exportManuscript('pdf')" style="flex:1;padding:12px;background:var(--white);border:1px solid var(--sable-mid);border-radius:12px;font-size:13px;color:var(--ink-mid);text-align:center;">📄 PDF</button>
-              <button onclick="exportManuscript('txt')" style="flex:1;padding:12px;background:var(--white);border:1px solid var(--sable-mid);border-radius:12px;font-size:13px;color:var(--ink-mid);text-align:center;">📝 TXT</button>
             </div>
           </div>
 
@@ -1055,6 +1068,11 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
       </div>
     </div>
 
+    <!-- MANUSCRIT -->
+    <div id="v-manuscrit" class="view">
+      <!-- Dynamic content rendered by renderManuscript() -->
+    </div>
+
   </div>
 
   <!-- Navbar -->
@@ -1070,6 +1088,10 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
     <button class="nav-item" onclick="switchView('research',this)">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="10" height="14" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><line x1="7" y1="7" x2="11" y2="7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="7" y1="10" x2="11" y2="10" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><circle cx="17" cy="17" r="3" stroke="currentColor" stroke-width="1.3" fill="none"/><line x1="19.5" y1="19.5" x2="22" y2="22" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
       <span>Recherche</span>
+    </button>
+    <button class="nav-item" onclick="switchView('manuscrit',this)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><line x1="8" y1="8" x2="16" y2="8" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="8" y1="16" x2="12" y2="16" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><polyline points="14,15 16,17 20,13" stroke="var(--terracotta)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Manuscrit</span>
     </button>
     <button class="nav-item" onclick="switchView('projects',this)">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="13" y="3" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="2" y="14" width="9" height="7" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="13" y="14" width="9" height="7" rx="2" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
@@ -1481,16 +1503,18 @@ async function loadAll() {
   try {
     const [ideasData, fragsData, linksData, refsData, actData, researchData, projectsData] = await Promise.all([
       db.get('ideas', { select: '*', order: 'created_at.asc' }),
-      db.get('fragments', { select: 'id,idea_id,text,validated_at,writing_time,created_at,updated_at' }),
+      db.get('fragments', { select: 'id,idea_id,text,validated_at,writing_time,section_id,position,created_at,updated_at' }).catch(() => db.get('fragments', { select: 'id,idea_id,text,validated_at,writing_time,created_at,updated_at' })),
       db.get('fragment_links', { select: '*' }),
       db.get('biblio_refs', { select: '*' }),
       db.get('activity', { select: '*', order: 'day.desc' }),
       db.get('research_notes', { select: '*', order: 'created_at.desc' }),
       db.get('projects', { select: '*', order: 'created_at.asc' }),
     ]);
+    const sectionsData = await db.get('sections', { select: '*', order: 'position.asc' }).catch(() => []);
     ideas = ideasData || [];
     researchNotes = researchData || [];
     projects = projectsData || [];
+    sections = sectionsData || [];
     if (projects.length > 0 && !currentProject) {
       const savedId = localStorage.getItem('sn_current_project');
       currentProject = (savedId && projects.find(p => p.id === savedId)) || projects[0];
@@ -1533,6 +1557,16 @@ let currentProject = null;
 let pfGenre = 'Essai', pfTone = 'Direct', pfAudience = 'Grand public';
 let pfStatus = 'en cours', pfIcon = '📖', pfColor = '#4A7C59';
 let editingProjectId = null;
+
+// ===== MANUSCRIT STATE =====
+let sections = [];
+let currentSectionId = null;
+let mscrScreen = 'sections';
+let mscrDragIdeaId = null;
+let mscrDragFromUnclassified = false;
+let sectionFormMode = 'create';
+let sectionFormId = null;
+let sectionFormColor = '#4A7C59';
 
 async function loadProjects() {
   try {
@@ -2544,15 +2578,16 @@ document.addEventListener('click', () => {
 });
 
 function switchView(v, btn) {
-  if (['write','projects','ideas','research'].includes(v)) prevView = v;
+  if (['write','projects','ideas','research','manuscrit'].includes(v)) prevView = v;
   document.querySelectorAll('.view').forEach(el => { el.classList.remove('active'); el.style.display = ''; });
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   const el = $('v-'+v);
-  if (el) { el.classList.add('active'); if (v === 'write') el.style.display = 'flex'; }
+  if (el) { el.classList.add('active'); if (v === 'write') el.style.display = 'flex'; if (v === 'manuscrit') el.style.display = 'flex'; }
   if (btn) btn.classList.add('active');
   if (v === 'projects') renderProjects();
   if (v === 'ideas') { renderIdeasView(); }
   if (v === 'research') renderResearchNotes();
+  if (v === 'manuscrit') { mscrScreen = 'sections'; renderManuscript(); }
   $('main').scrollTop = 0;
 }
 
@@ -3847,6 +3882,595 @@ function exportManuscriptTXT(validated) {
   a.href = url; a.download = `manuscrit-shrapnel-${new Date().toISOString().split('T')[0]}.txt`;
   a.click(); URL.revokeObjectURL(url);
   notify('Manuscrit TXT exporté ✓');
+}
+
+// ===== MANUSCRIT =====
+function getProjectSections() {
+  if (!currentProject) return sections;
+  return sections.filter(s => s.project_id === currentProject.id);
+}
+
+function getValidatedFragments() {
+  return ideas.filter(i => i.done && fragments[i.id]?.validated_at);
+}
+
+function getSectionFragments(sectionId) {
+  return getValidatedFragments()
+    .filter(i => fragments[i.id]?.section_id === sectionId)
+    .sort((a, b) => (fragments[a.id]?.position || 0) - (fragments[b.id]?.position || 0));
+}
+
+function getUnclassifiedFragments() {
+  const projectIdSet = currentProject
+    ? new Set(ideas.filter(i => i.project_id === currentProject.id).map(i => i.id))
+    : null;
+  return getValidatedFragments()
+    .filter(i => !fragments[i.id]?.section_id && (!projectIdSet || projectIdSet.has(i.id)))
+    .sort((a, b) => new Date(fragments[a.id]?.validated_at) - new Date(fragments[b.id]?.validated_at));
+}
+
+function renderManuscript() {
+  if (window.innerWidth >= 768) renderManuscriptDesktop();
+  else if (mscrScreen === 'sections') renderMscrSections();
+  else renderMscrDetail();
+}
+
+function renderMscrSections() {
+  const el = $('v-manuscrit');
+  const projectSections = getProjectSections();
+  const unclassified = getUnclassifiedFragments();
+  el.innerHTML = `<div style="display:flex;flex-direction:column;height:100%;background:var(--sable);">
+    <div style="padding:16px 16px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--sable-mid);background:var(--sauge);flex-shrink:0;">
+      <div style="font-family:Georgia,serif;font-size:17px;color:var(--green-text);font-style:italic;">Manuscrit</div>
+      <button onclick="showMscrExportMenu(this)" style="font-size:12px;padding:6px 14px;background:rgba(240,247,242,0.2);color:var(--green-text);border-radius:9px;font-weight:500;border:1px solid rgba(240,247,242,0.3);">Exporter ↓</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:16px;">
+      <div style="font-size:10px;color:var(--ink-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;">Sections — ${currentProject?.name || 'Tous les projets'}</div>
+      ${projectSections.length === 0 ? `<div style="font-size:13px;color:var(--ink-dim);text-align:center;padding:20px 0;">Aucune section. Crée la première !</div>` : ''}
+      ${projectSections.map(s => {
+        const count = getSectionFragments(s.id).length;
+        return `<div class="mscr-section-card${currentSectionId===s.id?' active':''}" onclick="openMscrSection('${s.id}')">
+          <div class="mscr-dot" style="background:${s.color||'var(--sauge)'}"></div>
+          <div class="mscr-section-name">${s.title}</div>
+          <div class="mscr-count">${count}</div>
+        </div>`;
+      }).join('')}
+      <button onclick="openNewSectionForm()" style="display:flex;align-items:center;gap:8px;width:100%;padding:11px 14px;border:1.5px dashed var(--sable-dark);border-radius:12px;font-size:13px;color:var(--ink-dim);background:transparent;margin-top:4px;cursor:pointer;"><span style="font-size:16px;">+</span> Nouvelle section</button>
+      ${unclassified.length > 0 ? `
+      <div class="mscr-pool">
+        <div style="font-size:10px;color:var(--ink-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;margin-top:4px;">Non classés (${unclassified.length})</div>
+        ${unclassified.map(idea => `
+          <div class="mscr-fragment-row">
+            <div style="flex:1;">
+              <div class="mscr-fragment-title">${idea.title}</div>
+              <div class="mscr-fragment-meta">${cw(fragments[idea.id]?.text||'')} mots</div>
+            </div>
+            ${projectSections.length > 0 ? `<button class="mscr-btn-sm" onclick="showAssignMenu('${idea.id}')">Assigner →</button>` : ''}
+          </div>`).join('')}
+      </div>` : ''}
+    </div>
+  </div>`;
+}
+
+function renderMscrDetail() {
+  const section = sections.find(s => s.id === currentSectionId);
+  if (!section) { mscrScreen = 'sections'; renderMscrSections(); return; }
+  const sectionFrags = getSectionFragments(currentSectionId);
+  const projectSections = getProjectSections();
+  const el = $('v-manuscrit');
+  el.innerHTML = `<div style="display:flex;flex-direction:column;height:100%;background:var(--sable);">
+    <div style="padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--sable-mid);background:var(--sauge);flex-shrink:0;">
+      <button onclick="backToMscrSections()" style="font-size:20px;color:var(--green-text);padding:0 4px;opacity:0.8;">←</button>
+      <div style="display:flex;align-items:center;gap:8px;flex:1;">
+        <div class="mscr-dot" style="background:${section.color||'var(--sauge)'}"></div>
+        <div style="font-family:Georgia,serif;font-style:italic;font-size:16px;color:var(--green-text);">${section.title}</div>
+      </div>
+      <button onclick="openEditSectionForm('${section.id}')" style="font-size:11px;padding:4px 8px;border:1px solid rgba(240,247,242,0.3);border-radius:6px;color:var(--green-text);opacity:0.8;">Éditer</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:16px;">
+      ${sectionFrags.length === 0 ? `<div style="font-size:13px;color:var(--ink-dim);text-align:center;padding:30px 0;">Aucun fragment dans cette section.<br><span style="font-size:12px;">Assigne des fragments depuis la liste.</span></div>` : ''}
+      ${sectionFrags.map((idea, i) => `
+        <div class="mscr-frag-item">
+          <div class="mscr-order-btns">
+            ${i > 0 ? `<button class="mscr-order-btn" onclick="moveMscrFragPos('${idea.id}','up')">↑</button>` : `<div style="width:24px;height:20px;"></div>`}
+            ${i < sectionFrags.length-1 ? `<button class="mscr-order-btn" onclick="moveMscrFragPos('${idea.id}','down')">↓</button>` : `<div style="width:24px;height:20px;"></div>`}
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div class="mscr-fragment-title">${idea.title}</div>
+            <div class="mscr-fragment-meta">${cw(fragments[idea.id]?.text||'')} mots</div>
+          </div>
+          <button class="mscr-btn-sm" onclick="showMoveMenu('${idea.id}')">Déplacer →</button>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderManuscriptDesktop() {
+  const projectSections = getProjectSections();
+  const unclassified = getUnclassifiedFragments();
+  const activeSec = currentSectionId ? sections.find(s => s.id === currentSectionId) : null;
+  const centerFrags = currentSectionId ? getSectionFragments(currentSectionId) : [];
+  const el = $('v-manuscrit');
+  el.innerHTML = `<div style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
+    <div style="padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--sable-mid);background:var(--sauge);flex-shrink:0;">
+      <div style="font-family:Georgia,serif;font-size:15px;color:var(--green-text);font-style:italic;">Manuscrit${currentProject?' — '+currentProject.name:''}</div>
+      <button onclick="showMscrExportMenu(this)" style="font-size:12px;padding:5px 12px;background:rgba(240,247,242,0.2);color:var(--green-text);border-radius:8px;font-weight:500;border:1px solid rgba(240,247,242,0.3);">Exporter ↓</button>
+    </div>
+    <div style="flex:1;display:flex;overflow:hidden;">
+      <div style="width:160px;flex-shrink:0;border-right:1px solid var(--sable-mid);overflow-y:auto;padding:10px 8px;display:flex;flex-direction:column;gap:3px;background:var(--sable);">
+        ${projectSections.map(s => {
+          const count = getSectionFragments(s.id).length;
+          return `<div onclick="openMscrSection('${s.id}')" style="padding:7px 10px;border-radius:9px;cursor:pointer;display:flex;align-items:center;gap:7px;background:${currentSectionId===s.id?'rgba(74,124,89,0.12)':'transparent'};border:1px solid ${currentSectionId===s.id?'var(--sauge)':'transparent'};">
+            <div style="width:8px;height:8px;border-radius:50%;background:${s.color||'var(--sauge)'};flex-shrink:0;"></div>
+            <div style="flex:1;font-size:12px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.title}</div>
+            <div style="font-size:10px;color:var(--ink-dim);">${count}</div>
+          </div>`;
+        }).join('')}
+        <button onclick="openNewSectionForm()" style="margin-top:6px;padding:7px 10px;border:1.5px dashed var(--sable-dark);border-radius:9px;font-size:11px;color:var(--ink-dim);background:transparent;cursor:pointer;text-align:center;">+ Section</button>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:16px;" id="mscr-center-drop" ondragover="event.preventDefault()" ondrop="onMscrDrop(event)">
+        ${!currentSectionId
+          ? `<div style="font-size:13px;color:var(--ink-dim);text-align:center;padding:60px 20px;">← Sélectionne une section</div>`
+          : activeSec ? `
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+              <div style="width:10px;height:10px;border-radius:50%;background:${activeSec.color||'var(--sauge)'}"></div>
+              <div style="font-family:Georgia,serif;font-style:italic;font-size:15px;color:var(--ink);">${activeSec.title}</div>
+              <button onclick="openEditSectionForm('${activeSec.id}')" style="font-size:11px;padding:3px 8px;border:1px solid var(--sable-mid);border-radius:6px;color:var(--ink-dim);margin-left:auto;">Éditer</button>
+            </div>
+            ${centerFrags.length === 0 ? `<div style="font-size:13px;color:var(--ink-dim);text-align:center;padding:20px 0;">Aucun fragment — glisse depuis le panel droit.</div>` : ''}
+            <div id="mscr-frags-list">
+              ${centerFrags.map((idea, i) => `
+                <div class="mscr-frag-item" draggable="true" data-idx="${i}" data-idea="${idea.id}"
+                  ondragstart="mscrDragStart(event,'${idea.id}')"
+                  ondragover="event.preventDefault();mscrDragOver(event,this)"
+                  ondrop="onMscrDropItem(event,${i})"
+                  style="cursor:grab;">
+                  <div style="font-size:16px;color:var(--sable-dark);padding:0 2px;">⠿</div>
+                  <div style="flex:1;min-width:0;">
+                    <div class="mscr-fragment-title">${idea.title}</div>
+                    <div class="mscr-fragment-meta">${cw(fragments[idea.id]?.text||'')} mots</div>
+                  </div>
+                  <button class="mscr-btn-sm" onclick="showMoveMenu('${idea.id}')" style="font-size:10px;">Déplacer →</button>
+                </div>`).join('')}
+            </div>` : ''}
+      </div>
+      <div style="width:220px;flex-shrink:0;border-left:1px solid var(--sable-mid);overflow-y:auto;padding:12px 10px;background:var(--sable);">
+        <div style="font-size:10px;color:var(--ink-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;">Non classés (${unclassified.length})</div>
+        ${unclassified.length === 0 ? `<div style="font-size:12px;color:var(--ink-dim);text-align:center;padding:16px 0;">Tous assignés ✓</div>` : ''}
+        ${unclassified.map(idea => `
+          <div class="mscr-fragment-row" draggable="true" data-idea="${idea.id}"
+            ondragstart="mscrDragUnclassified(event,'${idea.id}')"
+            style="cursor:grab;">
+            <div style="flex:1;min-width:0;">
+              <div class="mscr-fragment-title">${idea.title}</div>
+              <div class="mscr-fragment-meta">${cw(fragments[idea.id]?.text||'')} mots</div>
+            </div>
+            ${projectSections.length > 0 ? `<button class="mscr-btn-sm" onclick="showAssignMenu('${idea.id}')" style="font-size:10px;">+</button>` : ''}
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function openMscrSection(sectionId) {
+  currentSectionId = sectionId;
+  if (window.innerWidth >= 768) renderManuscriptDesktop();
+  else { mscrScreen = 'detail'; renderMscrDetail(); }
+}
+
+function backToMscrSections() {
+  mscrScreen = 'sections';
+  renderMscrSections();
+}
+
+// Section CRUD
+async function createSection(title, color) {
+  if (!currentProject) { notify('Sélectionne un projet d\'abord'); return; }
+  const pos = getProjectSections().length;
+  try {
+    const res = await db.post('sections', { project_id: currentProject.id, title, position: pos, color: color || '#4A7C59', user_id: uid() });
+    sections.push(res[0]);
+    notify('Section créée ✓');
+    renderManuscript();
+  } catch(e) { notify('Erreur création section'); }
+}
+
+async function updateSection(id, data) {
+  try {
+    await db.patch('sections', `id=eq.${id}`, data);
+    const idx = sections.findIndex(s => s.id === id);
+    if (idx !== -1) sections[idx] = { ...sections[idx], ...data };
+    renderManuscript();
+  } catch(e) { notify('Erreur mise à jour section'); }
+}
+
+async function deleteSection(id) {
+  try {
+    const sectionFrags = getSectionFragments(id);
+    await Promise.all(sectionFrags.map(idea => {
+      const frag = fragments[idea.id];
+      if (frag) { frag.section_id = null; return db.patch('fragments', `id=eq.${frag.id}`, { section_id: null }); }
+    }).filter(Boolean));
+    await db.delete('sections', `id=eq.${id}`);
+    sections = sections.filter(s => s.id !== id);
+    if (currentSectionId === id) currentSectionId = null;
+    notify('Section supprimée');
+    renderManuscript();
+  } catch(e) { notify('Erreur suppression section'); }
+}
+
+async function assignFragmentToSection(ideaId, sectionId) {
+  const frag = fragments[ideaId];
+  if (!frag) return;
+  const pos = getSectionFragments(sectionId).length;
+  try {
+    await db.patch('fragments', `id=eq.${frag.id}`, { section_id: sectionId, position: pos });
+    frag.section_id = sectionId;
+    frag.position = pos;
+    renderManuscript();
+    notify('Fragment assigné ✓');
+  } catch(e) { notify('Erreur assignation'); }
+}
+
+async function unassignFragment(ideaId) {
+  const frag = fragments[ideaId];
+  if (!frag) return;
+  try {
+    await db.patch('fragments', `id=eq.${frag.id}`, { section_id: null });
+    frag.section_id = null;
+    renderManuscript();
+    notify('Fragment désassigné');
+  } catch(e) { notify('Erreur désassignation'); }
+}
+
+async function moveMscrFragPos(ideaId, direction) {
+  const sectionId = fragments[ideaId]?.section_id;
+  const sectionFrags = getSectionFragments(sectionId);
+  const idx = sectionFrags.findIndex(i => i.id === ideaId);
+  if (idx === -1) return;
+  const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+  if (targetIdx < 0 || targetIdx >= sectionFrags.length) return;
+  const fragA = fragments[ideaId];
+  const fragB = fragments[sectionFrags[targetIdx].id];
+  const posA = fragA.position || 0, posB = fragB.position || 0;
+  fragA.position = posB; fragB.position = posA;
+  try {
+    await Promise.all([
+      db.patch('fragments', `id=eq.${fragA.id}`, { position: fragA.position }),
+      db.patch('fragments', `id=eq.${fragB.id}`, { position: fragB.position }),
+    ]);
+    renderManuscript();
+  } catch(e) { notify('Erreur réordonnancement'); }
+}
+
+// Drag & drop
+function mscrDragStart(event, ideaId) {
+  mscrDragIdeaId = ideaId;
+  mscrDragFromUnclassified = false;
+  event.dataTransfer.effectAllowed = 'move';
+}
+
+function mscrDragUnclassified(event, ideaId) {
+  mscrDragIdeaId = ideaId;
+  mscrDragFromUnclassified = true;
+  event.dataTransfer.effectAllowed = 'move';
+}
+
+function mscrDragOver(event, el) {
+  event.preventDefault();
+  document.querySelectorAll('.mscr-frag-item.drag-over').forEach(e => e.classList.remove('drag-over'));
+  el.classList.add('drag-over');
+}
+
+async function onMscrDrop(event) {
+  event.preventDefault();
+  document.querySelectorAll('.drag-over').forEach(e => e.classList.remove('drag-over'));
+  if (!mscrDragIdeaId || !currentSectionId) return;
+  if (mscrDragFromUnclassified) await assignFragmentToSection(mscrDragIdeaId, currentSectionId);
+  mscrDragIdeaId = null;
+}
+
+async function onMscrDropItem(event, targetIdx) {
+  event.preventDefault();
+  event.stopPropagation();
+  document.querySelectorAll('.drag-over').forEach(e => e.classList.remove('drag-over'));
+  if (!mscrDragIdeaId || !currentSectionId) return;
+  if (mscrDragFromUnclassified) {
+    await assignFragmentToSection(mscrDragIdeaId, currentSectionId);
+    mscrDragIdeaId = null;
+    return;
+  }
+  const sectionFrags = getSectionFragments(currentSectionId);
+  const srcIdx = sectionFrags.findIndex(i => i.id === mscrDragIdeaId);
+  if (srcIdx === -1 || srcIdx === targetIdx) { mscrDragIdeaId = null; return; }
+  const reordered = [...sectionFrags];
+  const [moved] = reordered.splice(srcIdx, 1);
+  reordered.splice(targetIdx, 0, moved);
+  try {
+    await Promise.all(reordered.map((idea, i) => {
+      const frag = fragments[idea.id];
+      if (!frag || frag.position === i) return null;
+      frag.position = i;
+      return db.patch('fragments', `id=eq.${frag.id}`, { position: i });
+    }).filter(Boolean));
+    renderManuscriptDesktop();
+  } catch(e) { notify('Erreur réordonnancement'); }
+  mscrDragIdeaId = null;
+}
+
+// Section form modal
+function openNewSectionForm() {
+  sectionFormMode = 'create'; sectionFormId = null; sectionFormColor = '#4A7C59';
+  showSectionFormModal(null);
+}
+
+function openEditSectionForm(id) {
+  const sec = sections.find(s => s.id === id);
+  if (!sec) return;
+  sectionFormMode = 'edit'; sectionFormId = id; sectionFormColor = sec.color || '#4A7C59';
+  showSectionFormModal(sec);
+}
+
+function showSectionFormModal(sec) {
+  const existing = $('section-form-modal');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'section-form-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;display:flex;align-items:flex-end;justify-content:center;';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  const colors = ['#4A7C59','#E07A50','#2E6FD8','#9B59B6','#E74C3C','#F39C12','#1ABC9C','#95A5A6'];
+  overlay.innerHTML = `<div style="background:var(--sable);border-radius:24px 24px 0 0;padding:24px 20px 36px;width:100%;max-width:500px;max-height:80vh;overflow-y:auto;">
+    <div style="width:40px;height:4px;background:var(--sable-mid);border-radius:2px;margin:0 auto 20px;"></div>
+    <div style="font-family:Georgia,serif;font-size:17px;color:var(--ink);margin-bottom:16px;">${sectionFormMode==='create'?'Nouvelle section':'Modifier la section'}</div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:10px;color:var(--ink-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px;">Titre</div>
+      <input id="sec-form-title" type="text" value="${sec?.title||''}" placeholder="Introduction, Partie 1…" style="width:100%;padding:11px 14px;font-size:14px;background:var(--white);border:1px solid var(--sable-mid);border-radius:10px;color:var(--ink);outline:none;font-family:Georgia,serif;font-style:italic;"/>
+    </div>
+    <div style="margin-bottom:20px;">
+      <div style="font-size:10px;color:var(--ink-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">Couleur</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;" id="sec-color-row">
+        ${colors.map(c => `<button onclick="setSectionColor(this,'${c}')" style="width:32px;height:32px;border-radius:50%;background:${c};border:3px solid ${c===sectionFormColor?'var(--ink)':'transparent'};cursor:pointer;"></button>`).join('')}
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      ${sectionFormMode==='edit'?`<button onclick="confirmDeleteSection('${sectionFormId}')" style="padding:11px 14px;border:1px solid rgba(180,50,50,0.3);border-radius:10px;font-size:13px;color:#c0392b;background:transparent;">Supprimer</button>`:''}
+      <button onclick="$('section-form-modal').remove()" style="flex:1;padding:11px;border:1px solid var(--sable-mid);border-radius:10px;font-size:13px;color:var(--ink-dim);">Annuler</button>
+      <button onclick="saveSectionForm()" style="flex:2;padding:11px;background:var(--sauge);color:#fff;border-radius:10px;font-size:13px;font-weight:500;">Enregistrer</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  setTimeout(() => $('sec-form-title')?.focus(), 50);
+}
+
+function setSectionColor(btn, color) {
+  sectionFormColor = color;
+  document.querySelectorAll('#sec-color-row button').forEach(b => {
+    b.style.border = b.style.background === color ? '3px solid var(--ink)' : '3px solid transparent';
+  });
+}
+
+async function saveSectionForm() {
+  const title = $('sec-form-title')?.value?.trim();
+  if (!title) { notify('Titre requis'); return; }
+  $('section-form-modal')?.remove();
+  if (sectionFormMode === 'create') {
+    await createSection(title, sectionFormColor);
+  } else {
+    await updateSection(sectionFormId, { title, color: sectionFormColor });
+    notify('Section mise à jour ✓');
+  }
+}
+
+async function confirmDeleteSection(id) {
+  $('section-form-modal')?.remove();
+  if (!confirm('Supprimer cette section ? Les fragments seront désassignés.')) return;
+  await deleteSection(id);
+}
+
+// Assign / move menus
+function showAssignMenu(ideaId) {
+  const projectSections = getProjectSections();
+  if (!projectSections.length) { notify('Crée une section d\'abord'); return; }
+  const existing = $('assign-menu-modal');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'assign-menu-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9500;display:flex;align-items:flex-end;justify-content:center;';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  const idea = ideas.find(i => i.id === ideaId);
+  overlay.innerHTML = `<div style="background:var(--sable);border-radius:24px 24px 0 0;padding:20px 16px 36px;width:100%;max-width:500px;max-height:70vh;overflow-y:auto;">
+    <div style="width:40px;height:4px;background:var(--sable-mid);border-radius:2px;margin:0 auto 16px;"></div>
+    <div style="font-size:12px;color:var(--ink-dim);margin-bottom:12px;">Assigner <strong style="color:var(--ink);">${idea?.title||''}</strong> à :</div>
+    ${projectSections.map(s => `<div onclick="assignFragmentToSection('${ideaId}','${s.id}');$('assign-menu-modal').remove()"
+      style="display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;cursor:pointer;background:var(--white);border:1px solid var(--sable-mid);margin-bottom:6px;">
+      <div style="width:10px;height:10px;border-radius:50%;background:${s.color||'var(--sauge)'}"></div>
+      <div style="font-size:13px;color:var(--ink);">${s.title}</div>
+    </div>`).join('')}
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+function showMoveMenu(ideaId) {
+  const frag = fragments[ideaId];
+  if (!frag) return;
+  const otherSections = getProjectSections().filter(s => s.id !== frag.section_id);
+  const existing = $('move-menu-modal');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'move-menu-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9500;display:flex;align-items:flex-end;justify-content:center;';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  const idea = ideas.find(i => i.id === ideaId);
+  overlay.innerHTML = `<div style="background:var(--sable);border-radius:24px 24px 0 0;padding:20px 16px 36px;width:100%;max-width:500px;max-height:70vh;overflow-y:auto;">
+    <div style="width:40px;height:4px;background:var(--sable-mid);border-radius:2px;margin:0 auto 16px;"></div>
+    <div style="font-size:12px;color:var(--ink-dim);margin-bottom:12px;">Déplacer <strong style="color:var(--ink);">${idea?.title||''}</strong> vers :</div>
+    <div onclick="unassignFragment('${ideaId}');$('move-menu-modal').remove()"
+      style="display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;cursor:pointer;background:var(--white);border:1px solid rgba(180,50,50,0.2);margin-bottom:6px;">
+      <div style="font-size:13px;color:#c0392b;">↩ Non classés</div>
+    </div>
+    ${otherSections.map(s => `<div onclick="assignFragmentToSection('${ideaId}','${s.id}');$('move-menu-modal').remove()"
+      style="display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;cursor:pointer;background:var(--white);border:1px solid var(--sable-mid);margin-bottom:6px;">
+      <div style="width:10px;height:10px;border-radius:50%;background:${s.color||'var(--sauge)'}"></div>
+      <div style="font-size:13px;color:var(--ink);">${s.title}</div>
+    </div>`).join('')}
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+// Export menu
+function showMscrExportMenu(btn) {
+  const existing = $('mscr-export-menu');
+  if (existing) { existing.remove(); return; }
+  const menu = document.createElement('div');
+  menu.id = 'mscr-export-menu';
+  const rect = btn ? btn.getBoundingClientRect() : { top: 60, right: 16 };
+  menu.style.cssText = `position:fixed;top:${rect.bottom+6}px;right:16px;background:var(--white);border:1px solid var(--sable-mid);border-radius:12px;padding:6px;z-index:9000;box-shadow:0 4px 20px rgba(0,0,0,0.15);min-width:160px;`;
+  menu.innerHTML = `
+    <div style="font-size:10px;color:var(--ink-dim);letter-spacing:0.08em;text-transform:uppercase;padding:4px 8px 6px;">Format</div>
+    <button onclick="exportMscrManuscript('pdf');$('mscr-export-menu')?.remove()" style="display:block;width:100%;text-align:left;padding:8px 12px;border-radius:8px;font-size:13px;color:var(--ink);">📄 PDF</button>
+    <button onclick="exportMscrManuscript('txt');$('mscr-export-menu')?.remove()" style="display:block;width:100%;text-align:left;padding:8px 12px;border-radius:8px;font-size:13px;color:var(--ink);">📝 TXT</button>
+    <button onclick="exportMscrManuscript('md');$('mscr-export-menu')?.remove()" style="display:block;width:100%;text-align:left;padding:8px 12px;border-radius:8px;font-size:13px;color:var(--ink);">📋 Markdown</button>`;
+  document.body.appendChild(menu);
+  setTimeout(() => document.addEventListener('click', () => menu.remove(), { once: true }), 10);
+}
+
+// Export logic
+function exportMscrManuscript(format) {
+  const projectSections = getProjectSections();
+  const unclassified = getUnclassifiedFragments();
+  const sectionsWithFrags = projectSections.map(s => ({ section: s, frags: getSectionFragments(s.id) }));
+  const total = sectionsWithFrags.reduce((a, sw) => a + sw.frags.length, 0) + unclassified.length;
+  if (total === 0) { notify('Aucun fragment validé à exporter'); return; }
+  if (format === 'pdf') exportMscrPDF(sectionsWithFrags, unclassified);
+  else if (format === 'txt') exportMscrTXT(sectionsWithFrags, unclassified);
+  else if (format === 'md') exportMscrMD(sectionsWithFrags, unclassified);
+}
+
+function mscrFileName(ext) {
+  return `manuscrit-${(currentProject?.name||'shrapnel').replace(/[^a-z0-9]/gi,'-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.${ext}`;
+}
+
+function htmlToText(html) {
+  const d = document.createElement('div');
+  d.innerHTML = html || '';
+  return d.innerText || '';
+}
+
+function exportMscrPDF(sectionsWithFrags, unclassified) {
+  function doExport() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const margin = 28, maxW = 210 - margin * 2;
+    let y = 40;
+    const total = sectionsWithFrags.reduce((a, sw) => a + sw.frags.length, 0) + unclassified.length;
+
+    // Cover
+    doc.setFillColor(74, 124, 89);
+    doc.rect(0, 0, 210, 60, 'F');
+    doc.setTextColor(240, 247, 242);
+    doc.setFont('times', 'bolditalic');
+    doc.setFontSize(24);
+    doc.text(currentProject?.name || 'Manuscrit', margin, 32);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(`${total} fragments · ${new Date().toLocaleDateString('fr-FR')}`, margin, 46);
+
+    function fragPage(idea) {
+      doc.addPage(); y = 30;
+      const frag = fragments[idea.id];
+      const d = new Date(frag.validated_at);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9); doc.setTextColor(155, 142, 126);
+      doc.text(d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }), margin, y); y += 8;
+      doc.setFont('times', 'bolditalic');
+      doc.setFontSize(18); doc.setTextColor(28, 28, 28);
+      const tLines = doc.splitTextToSize(idea.title, maxW);
+      doc.text(tLines, margin, y); y += tLines.length * 8 + 4;
+      doc.setDrawColor(200, 196, 190); doc.setLineWidth(0.3);
+      doc.line(margin, y, 210 - margin, y); y += 10;
+      doc.setFont('times', 'normal'); doc.setFontSize(12); doc.setTextColor(74, 66, 56);
+      const bLines = doc.splitTextToSize(htmlToText(frag.text), maxW);
+      bLines.forEach(line => { if (y > 270) { doc.addPage(); y = 25; } doc.text(line, margin, y); y += 7; });
+      doc.setFontSize(8); doc.setTextColor(200, 196, 190);
+      doc.text('shrapnelnotes.com', 210/2, 290, { align: 'center' });
+    }
+
+    sectionsWithFrags.forEach(sw => {
+      if (!sw.frags.length) return;
+      doc.addPage(); y = 80;
+      doc.setFont('times', 'bolditalic'); doc.setFontSize(20); doc.setTextColor(28, 28, 28);
+      doc.text(sw.section.title, margin, y);
+      doc.setDrawColor(200, 196, 190); doc.setLineWidth(0.4);
+      doc.line(margin, y + 5, 210 - margin, y + 5);
+      sw.frags.forEach(idea => fragPage(idea));
+    });
+
+    if (unclassified.length > 0) {
+      doc.addPage(); y = 80;
+      doc.setFont('times', 'bolditalic'); doc.setFontSize(20); doc.setTextColor(28, 28, 28);
+      doc.text('Fragments non classés', margin, y);
+      doc.setDrawColor(200, 196, 190); doc.setLineWidth(0.4);
+      doc.line(margin, y + 5, 210 - margin, y + 5);
+      unclassified.forEach(idea => fragPage(idea));
+    }
+
+    doc.save(mscrFileName('pdf'));
+    notify('Manuscrit PDF exporté ✓');
+  }
+
+  if (!window.jspdf) {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    s.onload = doExport;
+    document.head.appendChild(s);
+  } else doExport();
+}
+
+function exportMscrTXT(sectionsWithFrags, unclassified) {
+  const projName = (currentProject?.name || 'SHRAPNEL NOTES').toUpperCase();
+  let txt = `MANUSCRIT — ${projName}\n${new Date().toLocaleDateString('fr-FR')}\n${'═'.repeat(50)}\n\n`;
+
+  sectionsWithFrags.forEach(sw => {
+    if (!sw.frags.length) return;
+    txt += sw.section.title.toUpperCase() + '\n' + '─'.repeat(Math.max(4, sw.section.title.length)) + '\n\n';
+    sw.frags.forEach(idea => {
+      txt += `[${idea.title}]\n\n${htmlToText(fragments[idea.id]?.text)}\n\n${'─'.repeat(40)}\n\n`;
+    });
+  });
+
+  if (unclassified.length > 0) {
+    txt += `FRAGMENTS NON CLASSÉS\n${'─'.repeat(21)}\n\n`;
+    unclassified.forEach(idea => {
+      txt += `[${idea.title}]\n\n${htmlToText(fragments[idea.id]?.text)}\n\n${'─'.repeat(40)}\n\n`;
+    });
+  }
+
+  const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = mscrFileName('txt'); a.click(); URL.revokeObjectURL(url);
+  notify('Manuscrit TXT exporté ✓');
+}
+
+function exportMscrMD(sectionsWithFrags, unclassified) {
+  let md = `# ${currentProject?.name || 'Manuscrit'}\n\n*${new Date().toLocaleDateString('fr-FR')}*\n\n---\n\n`;
+
+  sectionsWithFrags.forEach(sw => {
+    if (!sw.frags.length) return;
+    md += `## ${sw.section.title}\n\n`;
+    sw.frags.forEach(idea => { md += `### ${idea.title}\n\n${htmlToText(fragments[idea.id]?.text)}\n\n---\n\n`; });
+  });
+
+  if (unclassified.length > 0) {
+    md += `## Fragments non classés\n\n`;
+    unclassified.forEach(idea => { md += `### ${idea.title}\n\n${htmlToText(fragments[idea.id]?.text)}\n\n---\n\n`; });
+  }
+
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = mscrFileName('md'); a.click(); URL.revokeObjectURL(url);
+  notify('Manuscrit Markdown exporté ✓');
 }
 
 // ===== PWA — mise à jour automatique =====
